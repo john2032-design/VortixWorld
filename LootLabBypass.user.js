@@ -16,8 +16,7 @@
 // @icon         https://i.ibb.co/cKy9ztXL/IMG-3412.png
 // @grant        none
 // @license      MIT
-// @downloadURL  https://update.greasyfork.org/scripts/520333/NBTHUB%20Bypass%20Native%20Key.user.js
-// @updateURL    https://update.greasyfork.org/scripts/520333/NBTHUB%20Bypass%20Native%20Key.meta.js
+// @downloadURL  https://raw.githubusercontent.com/john2032-design/VortixWorld/refs/heads/main/LootLabBypass.user.js
 // ==/UserScript==
 
 (function() {
