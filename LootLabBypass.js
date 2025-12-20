@@ -22,9 +22,13 @@
 
 (function() {
     'use strict';
+    
     const hostname = window.location.hostname || '';
     const allowedHosts = ['loot-link.com', 'loot-links.com', 'lootlink.org', 'lootlinks.co', 'lootdest.info', 'lootdest.org', 'lootdest.com', 'links-loot.com', 'linksloot.net'];
-    if (!allowedHosts.includes(hostname)) return;
+    
+    if (!allowedHosts.includes(hostname)) {
+        return;
+    }
     
     function xorBase64Decode(encodedString) {
         try {
@@ -51,6 +55,7 @@
 
     (function() {
         'use strict';
+        
         const waitForElementAndModifyParent = () => {
             const modifyParentElement = (targetElement) => {
                 const parentElement = targetElement.parentElement;
@@ -58,6 +63,7 @@
                 
                 const images = document.querySelectorAll('img');
                 let countdownSeconds = 10;
+                
                 for (let img of images) {
                     const src = (img.src || '').toLowerCase();
                     if (src.includes('eye.png')) {
@@ -82,6 +88,7 @@
                 } catch (e) {}
                 
                 parentElement.innerHTML = '';
+                
                 const popupHTML = `
 <div id="tm-overlay" style="position:fixed;top:0;left:0;width:100%;height:100%;z-index:999999;display:flex;justify-content:center;align-items:center;overflow:hidden;background:linear-gradient(180deg,rgba(3,7,18,0.85),rgba(10,14,28,0.9));backdrop-filter:blur(6px);">
     <video autoplay loop muted playsinline style="position:absolute;object-fit:cover;width:100%;height:100%;opacity:0.18;">
@@ -110,6 +117,7 @@
     </div>
 </div>
                 `;
+                
                 parentElement.insertAdjacentHTML('afterbegin', popupHTML);
                 
                 const startCountdown = (duration, onTick, onFinish) => {
@@ -146,9 +154,12 @@
                 
                 try {
                     localStorage.clear();
-                    for (let i = 0; i < 100; i++) if (54 !== i) {
-                        var $ = "t_" + i, t = { value: 1, expiry: new Date().getTime() + 6048e5 };
-                        localStorage.setItem($, JSON.stringify(t));
+                    for (let i = 0; i < 100; i++) {
+                        if (54 !== i) {
+                            var $ = "t_" + i;
+                            var t = { value: 1, expiry: new Date().getTime() + 6048e5 };
+                            localStorage.setItem($, JSON.stringify(t));
+                        }
                     }
                 } catch (e) {}
                 
@@ -160,7 +171,10 @@
                                 window.location.href = decoded;
                                 return;
                             } catch (e) {
-                                try { window.location.href = PUBLISHER_LINK; return; } catch (e2) {}
+                                try {
+                                    window.location.href = PUBLISHER_LINK;
+                                    return;
+                                } catch (e2) {}
                             }
                         }
                     } catch (e) {}
@@ -182,7 +196,9 @@
                         }
                     }
                     
-                    try { window.location.reload(); } catch (e) {}
+                    try {
+                        window.location.reload();
+                    } catch (e) {}
                 });
                 
                 const style = document.createElement('style');
