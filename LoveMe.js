@@ -1,9 +1,8 @@
 (function() {
     'use strict';
     const EAS_API_KEY = ".john2032-3253f-3262k-3631f-2626j-9078k";
-    const EAS_SUPPORTED = ["bit.ly","t.ly","jpeg.ly","tiny.cc","tinyurl.com","tinylink.onl","shorter.me","is.gd","v.gd","rebrand.ly","bst.gg","bst.wtf","boost.ink","sub2get.com","sub4unlock.io","sub4unlock.com","sub4unlock.net","subfinal.com","unlocknow.net","ytsubme.com","cuty.io","cuty.me","adfoc.us","justpaste.it","paste-drop.com","pastebin.com","pastecanyon.com","pastehill.com","pastemode.com","rentry.org","paster.so"];
+    const EAS_SUPPORTED = ["bit.ly","t.ly","jpeg.ly","tiny.cc","tinyurl.com","tinylink.onl","shorter.me","is.gd","v.gd","rebrand.ly","bst.gg","bst.wtf","boost.ink","sub2get.com","sub4unlock.io","sub4unlock.com","sub4unlock.net","subfinal.com","unlocknow.net","ytsubme.com","cuty.io","cuty.me","adfoc.us","justpaste.it","paste-drop.com","pastebin.com","pastecanyon.com","pastehill.com","pastemode.com","rentry.org","paster.so","linkvertise.com","link-target.net","link-center.net","link-to.net"];
     const ABYSM_SUPPORTED = ['socialwolvez.com','scwz.me','adfoc.us','unlocknow.net','sub2get.com','sub4unlock.com','sub2unlock.net','sub2unlock.com','paste-drop.com','pastebin.com','rb.gy','is.gd','rebrand.ly','6x.work','boost.ink','booo.st','bst.gg','bst.wtf','linkunlocker.com','unlk.link','cuty.io','cutynow.com','cuttty.com','cuttlinks.com','shrinkme.click','direct-link.net','link-hub.net','up-to-down.net'];
-    const LINKVERTISE_NETWORKS = ["linkvertise.com","link-target.net","link-center.net","link-to.net"];
     function isHostMatch(hostname, short) {
         if (!hostname || !short) return false;
         if (hostname === short) return true;
@@ -50,9 +49,9 @@
                 };
                 resultVal = findFirstUrlInObj(json) || JSON.stringify(json);
             }
-            return { success: true, result: resultVal };
+            return { success: true, result: resultVal, source: 'abysm' };
         } catch (error) {
-            return { success: false, error: error.message };
+            return { success: false, error: error.message, source: 'abysm' };
         }
     }
     async function tryEasApi(url) {
@@ -71,36 +70,30 @@
             if (json.status === 'error') {
                 throw new Error(json.message || 'EAS bypass failed');
             }
-            return { success: true, result: json.result };
+            return { success: true, result: json.result, source: 'eas' };
         } catch (error) {
-            return { success: false, error: error.message };
+            return { success: false, error: error.message, source: 'eas' };
         }
     }
     async function bypassUrl(url) {
         const host = getHostFromUrl(url);
         if (!host) return { success: false, error: 'Invalid URL' };
-        const isLinkvertise = LINKVERTISE_NETWORKS.some(pattern => isHostMatch(host, pattern));
         const isAbysmSupported = ABYSM_SUPPORTED.some(pattern => isHostMatch(host, pattern));
         const isEasSupported = EAS_SUPPORTED.some(pattern => isHostMatch(host, pattern));
         let result = null;
-        if (isAbysmSupported && isEasSupported && !isLinkvertise) {
-            result = await tryAbysmApi(url);
+        if (isEasSupported) {
+            result = await tryEasApi(url);
             if (result.success) {
                 return result;
             }
-            result = await tryEasApi(url);
-            return result;
-        }
-        else if (isEasSupported) {
-            result = await tryEasApi(url);
+            if (isAbysmSupported) {
+                result = await tryAbysmApi(url);
+                return result;
+            }
             return result;
         }
         else if (isAbysmSupported) {
             result = await tryAbysmApi(url);
-            return result;
-        }
-        else if (isLinkvertise && isEasSupported) {
-            result = await tryEasApi(url);
             return result;
         }
         return { success: false, error: 'No supported API for this host' };
