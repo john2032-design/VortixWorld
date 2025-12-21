@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         VortixWorld Bypass
 // @namespace    afklolbypasser
-// @version      1.2.1
+// @version      1.2.6
 // @description  Bypass 💩
 // @author       afk.l0l
 // @match        *://loot-link.com/s?*
@@ -49,8 +49,43 @@
 // @match        *://link-hub.net/*
 // @match        *://up-to-down.net/*
 // @match        *://linkvertise.com/*
+// @match        *://linkvertise.com/*
+// @match        *://link-target.net/*
+// @match        *://link-center.net/*
+// @match        *://link-to.net/*
+// @match        *://bit.ly/*
+// @match        *://t.ly/*
+// @match        *://jpeg.ly/*
+// @match        *://tiny.cc/*
+// @match        *://tinyurl.com/*
+// @match        *://tinylink.onl/*
+// @match        *://shorter.me/*
+// @match        *://is.gd/*
+// @match        *://v.gd/*
+// @match        *://rebrand.ly/*
+// @match        *://bst.gg/*
+// @match        *://bst.wtf/*
+// @match        *://boost.ink/*
+// @match        *://sub2get.com/*
+// @match        *://sub4unlock.io/*
+// @match        *://sub4unlock.com/*
+// @match        *://sub4unlock.net/*
+// @match        *://subfinal.com/*
+// @match        *://unlocknow.net/*
+// @match        *://ytsubme.com/*
+// @match        *://cuty.io/*
+// @match        *://cuty.me/*
+// @match        *://adfoc.us/*
+// @match        *://justpaste.it/*
+// @match        *://paste-drop.com/*
+// @match        *://pastebin.com/*
+// @match        *://pastecanyon.com/*
+// @match        *://pastehill.com/*
+// @match        *://pastemode.com/*
+// @match        *://rentry.org/*
+// @match        *://paster.so/*
 // @icon         https://i.ibb.co/4RNS0jJk/A4-EE3695-AC86-4449-941-E-CF701-A019-D4-F.png
-// @grant        none
+// @grant        GM_xmlhttpRequest
 // @license      MIT
 // @downloadURL  https://raw.githubusercontent.com/john2032-design/VortixWorld/refs/heads/main/LootLabBypass.user.js
 // @run-at       document-start
@@ -59,15 +94,24 @@
 (function () {
     'use strict';
 
-    const ABYSM_API_BASE = 'https://api.abysm.lat/v2/free/bypass?url=';
-    const API_HOSTS = [
-        'socialwolvez.com','scwz.me','adfoc.us','unlocknow.net','sub2get.com','sub4unlock.com',
-        'sub2unlock.net','sub2unlock.com','paste-drop.com','pastebin.com','rb.gy',
-        'is.gd','rebrand.ly','6x.work','boost.ink','booo.st','bst.gg','bst.wtf','linkunlocker.com',
-        'unlk.link','cuty.io','cutynow.com','cuttty.com','cuttlinks.com','shrinkme.click',
-        'direct-link.net','link-target.net','link-to.net','link-center.net','link-hub.net',
-        'up-to-down.net','linkvertise.com'
+    const EAS_API_HOSTS = [
+        "linkvertise.com","link-target.net","link-center.net","link-to.net",
+        "bit.ly","t.ly","jpeg.ly","tiny.cc","tinyurl.com","tinylink.onl",
+        "shorter.me","is.gd","v.gd","rebrand.ly","bst.gg","bst.wtf",
+        "boost.ink","sub2get.com","sub4unlock.io","sub4unlock.com",
+        "sub4unlock.net","subfinal.com","unlocknow.net","ytsubme.com",
+        "cuty.io","cuty.me","adfoc.us","justpaste.it","paste-drop.com",
+        "pastebin.com","pastecanyon.com","pastehill.com","pastemode.com",
+        "rentry.org","paster.so","loot-link.com","loot-links.com",
+        "lootlink.org","lootlinks.co","lootdest.info","lootdest.org",
+        "lootdest.com","links-loot.com","linksloot.net"
     ];
+
+    const EAS_API_KEY = ".john2032-3253f-3262k-3631f-2626j-9078k";
+    const EAS_API_URL = "https://api.eas-x.com/v3/bypass";
+
+    let notificationCounter = 0;
+    let notificationStack = [];
 
     function isHostMatch(hostname, short) {
         if (!hostname || !short) return false;
@@ -75,68 +119,262 @@
         return hostname.endsWith('.' + short);
     }
 
-    function createTopRightNotification() {
-        if (document.getElementById('afkBypass-notification')) return;
+    function updateNotificationPositions() {
+        const wrappers = document.querySelectorAll('div[id^="afkBypass-notification-"][id$="-wrap"]');
+        let topPosition = 12;
+        wrappers.forEach(wrapper => {
+            wrapper.style.top = `${topPosition}px`;
+            wrapper.style.right = '12px';
+            wrapper.style.position = 'fixed';
+            wrapper.style.zIndex = 2147483647;
+            topPosition += wrapper.offsetHeight + 8;
+        });
+    }
+
+    function extractEdgeEmojis(text) {
+        if (!text) return { leading: '', core: '', trailing: '' };
+        const s = String(text);
+        const startMatch = s.match(/^(\p{Extended_Pictographic}+)/u);
+        const endMatch = s.match(/(\p{Extended_Pictographic}+)$/u);
+        let leading = '';
+        let trailing = '';
+        let core = s;
+        if (startMatch) {
+            leading = startMatch[1];
+            core = core.slice(leading.length);
+        }
+        if (endMatch) {
+            trailing = endMatch[1];
+            core = core.slice(0, core.length - trailing.length);
+        }
+        core = core.trim();
+        return { leading, core, trailing };
+    }
+
+    function createTopRightNotification(titleText, subtitleText, icon) {
+        notificationCounter++;
+        const notificationId = `afkBypass-notification-${notificationCounter}`;
+        if (document.getElementById(`${notificationId}-wrap`)) return notificationId;
+
+        const wrap = document.createElement('div');
+        wrap.id = `${notificationId}-wrap`;
+        wrap.style.position = 'fixed';
+        wrap.style.top = '12px';
+        wrap.style.right = '12px';
+        wrap.style.zIndex = 2147483647;
+        wrap.style.display = 'inline-block';
+        wrap.style.opacity = '1';
+        wrap.style.transition = 'opacity 0.3s ease';
+        wrap.style.pointerEvents = 'auto';
+
         const n = document.createElement('div');
-        n.id = 'afkBypass-notification';
-        n.style.position = 'fixed';
-        n.style.top = '12px';
-        n.style.right = '12px';
-        n.style.zIndex = 2147483647;
+        n.id = notificationId;
+        n.style.position = 'relative';
         n.style.background = 'linear-gradient(90deg,#000000,#111111)';
-        n.style.color = '#fff';
-        n.style.padding = '8px 10px';
+        n.style.color = 'white';
+        n.style.padding = '8px 12px 18px 12px';
         n.style.borderRadius = '8px';
         n.style.boxShadow = '0 6px 18px rgba(0,0,0,0.6)';
         n.style.fontFamily = "Inter, system-ui, -apple-system, 'Segoe UI', Roboto, Arial";
         n.style.display = 'flex';
         n.style.alignItems = 'center';
-        n.style.gap = '8px';
+        n.style.gap = '10px';
         n.style.minWidth = '240px';
-        n.style.maxWidth = '360px';
+        n.style.maxWidth = '400px';
         n.style.border = '1px solid rgba(255,255,255,0.04)';
-        const icon = document.createElement('div');
-        icon.style.fontSize = '18px';
-        icon.textContent = '🌪️';
+        n.style.transition = 'opacity 0.3s ease';
+        n.style.boxSizing = 'border-box';
+        n.style.overflow = 'hidden';
+
+        const iconWrapper = document.createElement('div');
+        iconWrapper.style.width = '28px';
+        iconWrapper.style.height = '28px';
+        iconWrapper.style.borderRadius = '50%';
+        iconWrapper.style.background = 'linear-gradient(135deg,#fff6f6,#ff4d4d)';
+        iconWrapper.style.display = 'flex';
+        iconWrapper.style.alignItems = 'center';
+        iconWrapper.style.justifyContent = 'center';
+        iconWrapper.style.flexShrink = '0';
+
+        const iconElement = document.createElement('div');
+        iconElement.style.fontSize = '14px';
+        iconElement.textContent = icon || '🌪️';
+        iconWrapper.appendChild(iconElement);
+
         const textWrap = document.createElement('div');
         textWrap.style.display = 'flex';
         textWrap.style.flexDirection = 'column';
-        textWrap.style.gap = '1px';
-        const title = document.createElement('div');
-        title.style.fontWeight = 700;
-        title.style.fontSize = '13px';
-        title.textContent = 'Successfully Loaded Userscript!';
+        textWrap.style.gap = '4px';
+        textWrap.style.flex = '1';
+        textWrap.style.minWidth = '0';
+
+        const titleContainer = document.createElement('div');
+        titleContainer.style.display = 'flex';
+        titleContainer.style.alignItems = 'center';
+        titleContainer.style.gap = '8px';
+        titleContainer.style.overflow = 'hidden';
+
+        const parts = extractEdgeEmojis(titleText || '');
+        const leadingSpan = document.createElement('span');
+        leadingSpan.textContent = parts.leading || '';
+        leadingSpan.style.fontSize = '18px';
+        leadingSpan.style.lineHeight = '1';
+        leadingSpan.style.flex = '0 0 auto';
+        leadingSpan.style.color = '#ffffff';
+
+        const coreSpan = document.createElement('span');
+        coreSpan.style.fontWeight = 800;
+        coreSpan.style.fontSize = '15px';
+        coreSpan.style.color = 'transparent';
+        coreSpan.style.backgroundImage = 'linear-gradient(90deg,#ffffff,#ff4d4d)';
+        coreSpan.style.webkitBackgroundClip = 'text';
+        coreSpan.style.backgroundClip = 'text';
+        coreSpan.style.textOverflow = 'ellipsis';
+        coreSpan.style.whiteSpace = 'nowrap';
+        coreSpan.style.overflow = 'hidden';
+        coreSpan.textContent = parts.core || '';
+
+        const trailingSpan = document.createElement('span');
+        trailingSpan.textContent = parts.trailing || '';
+        trailingSpan.style.fontSize = '18px';
+        trailingSpan.style.lineHeight = '1';
+        trailingSpan.style.flex = '0 0 auto';
+        trailingSpan.style.color = '#ffffff';
+
+        titleContainer.appendChild(leadingSpan);
+        titleContainer.appendChild(coreSpan);
+        titleContainer.appendChild(trailingSpan);
+
         const subtitle = document.createElement('div');
-        subtitle.style.fontSize = '11px';
-        subtitle.style.opacity = '0.9';
-        subtitle.innerHTML = '<span style="color:#fff">Made By</span> <span style="color:#ff3b30;font-weight:700">afk.l0l</span>';
-        textWrap.appendChild(title);
+        subtitle.style.fontSize = '12px';
+        subtitle.style.opacity = '0.95';
+        subtitle.style.color = 'transparent';
+        subtitle.style.backgroundImage = 'linear-gradient(90deg,#f8f8f8,#ff6b6b)';
+        subtitle.style.webkitBackgroundClip = 'text';
+        subtitle.style.backgroundClip = 'text';
+        subtitle.style.textDecoration = 'none';
+        subtitle.style.overflow = 'hidden';
+        subtitle.style.textOverflow = 'ellipsis';
+        subtitle.style.whiteSpace = 'nowrap';
+        if (subtitleText) {
+            subtitle.textContent = subtitleText;
+        } else {
+            subtitle.innerHTML = 'Made By <span style="font-weight:700;color:transparent;background-image:linear-gradient(90deg,#ffffff,#ff4d4d);-webkit-background-clip:text;background-clip:text">afk.l0l</span>';
+        }
+
+        textWrap.appendChild(titleContainer);
         textWrap.appendChild(subtitle);
-        n.appendChild(icon);
+
+        n.appendChild(iconWrapper);
         n.appendChild(textWrap);
-        document.documentElement.appendChild(n);
+
+        const timerBar = document.createElement('div');
+        timerBar.id = `${notificationId}-timer-bar`;
+        timerBar.style.position = 'absolute';
+        timerBar.style.left = '12px';
+        timerBar.style.right = '12px';
+        timerBar.style.bottom = '10px';
+        timerBar.style.height = '2.5px';
+        timerBar.style.background = '#ff1f1f';
+        timerBar.style.borderRadius = '3px';
+        timerBar.style.transform = 'scaleX(1)';
+        timerBar.style.transformOrigin = 'left center';
+        timerBar.style.transition = 'transform 5s linear';
+        timerBar.style.pointerEvents = 'none';
+        timerBar.style.boxSizing = 'border-box';
+
+        n.appendChild(timerBar);
+        wrap.appendChild(n);
+        document.body.appendChild(wrap);
+
         setTimeout(() => {
-            const el = document.getElementById('afkBypass-notification');
-            if (el && el.parentNode) el.parentNode.removeChild(el);
-        }, 3500);
+            timerBar.style.transform = 'scaleX(0)';
+        }, 10);
+
+        setTimeout(() => {
+            const wrapEl = document.getElementById(`${notificationId}-wrap`);
+            if (wrapEl) {
+                wrapEl.style.opacity = '0';
+                setTimeout(() => {
+                    if (wrapEl.parentNode) wrapEl.parentNode.removeChild(wrapEl);
+                    updateNotificationPositions();
+                }, 300);
+            }
+        }, 5000);
+
+        notificationStack.push(notificationId);
+        updateNotificationPositions();
+
+        return notificationId;
     }
 
-    function showTopRightStatus(titleText, subtitleText, keep) {
-        let n = document.getElementById('afkBypass-notification');
-        if (!n) createTopRightNotification();
-        n = document.getElementById('afkBypass-notification');
-        if (!n) return;
-        const textWrap = n.querySelector('div:nth-child(2)');
-        if (textWrap) {
-            textWrap.children[0].textContent = titleText || '';
-            textWrap.children[1].textContent = subtitleText || '';
-        }
-        if (!keep) {
-            setTimeout(() => {
-                const el = document.getElementById('afkBypass-notification');
-                if (el && el.parentNode) el.parentNode.removeChild(el);
-            }, 3000);
-        }
+    function showTopRightStatus(titleText, subtitleText, icon) {
+        const notificationId = createTopRightNotification(titleText, subtitleText, icon);
+        return notificationId;
+    }
+
+    function createTimerNotification() {
+        const notificationId = createTopRightNotification('Processing Please Wait <3', 'Starting timer...', '⏰');
+        const notifWrap = document.getElementById(`${notificationId}-wrap`);
+        const notif = document.getElementById(notificationId);
+        const textWrap = notif.querySelector('div:nth-child(2)');
+        const subtitleEl = textWrap.children[1];
+
+        let startTime = Date.now();
+        let timerInterval;
+
+        const updateTimer = () => {
+            const elapsed = (Date.now() - startTime) / 1000;
+            subtitleEl.textContent = `Time elapsed: ${elapsed.toFixed(2)}s`;
+        };
+
+        timerInterval = setInterval(updateTimer, 100);
+        updateTimer();
+
+        return {
+            id: notificationId,
+            update: (newTitle, newSubtitle) => {
+                const wrapEl = document.getElementById(`${notificationId}-wrap`);
+                const notifEl = document.getElementById(notificationId);
+                if (notifEl) {
+                    const textWrapLocal = notifEl.querySelector('div:nth-child(2)');
+                    const titleContainer = textWrapLocal.children[0];
+                    const subtitleLocal = textWrapLocal.children[1];
+                    if (newTitle) {
+                        const partsN = extractEdgeEmojis(newTitle);
+                        if (titleContainer && titleContainer.children.length === 3) {
+                            titleContainer.children[0].textContent = partsN.leading || '';
+                            titleContainer.children[1].textContent = partsN.core || '';
+                            titleContainer.children[2].textContent = partsN.trailing || '';
+                        }
+                    }
+                    if (newSubtitle) subtitleLocal.textContent = newSubtitle;
+                }
+            },
+            stop: () => {
+                clearInterval(timerInterval);
+                const elapsed = (Date.now() - startTime) / 1000;
+                const notifEl = document.getElementById(notificationId);
+                if (notifEl) {
+                    const textWrapLocal = notifEl.querySelector('div:nth-child(2)');
+                    const subtitleLocal = textWrapLocal.children[1];
+                    subtitleLocal.textContent = `Completed in: ${elapsed.toFixed(2)}s`;
+                    const bar = document.getElementById(`${notificationId}-timer-bar`);
+                    if (bar) bar.style.transform = 'scaleX(0)';
+                }
+            },
+            remove: () => {
+                clearInterval(timerInterval);
+                const wrap = document.getElementById(`${notificationId}-wrap`);
+                if (wrap) {
+                    wrap.style.opacity = '0';
+                    setTimeout(() => {
+                        if (wrap.parentNode) wrap.parentNode.removeChild(wrap);
+                        updateNotificationPositions();
+                    }, 300);
+                }
+            }
+        };
     }
 
     function copyToClipboard(text) {
@@ -196,23 +434,41 @@
         box.style.maxHeight = '86vh';
         box.style.overflow = 'auto';
         box.style.background = 'linear-gradient(180deg,#000,#0b0b0b)';
-        box.style.color = '#fff';
+        box.style.color = 'white';
         box.style.borderRadius = '10px';
         box.style.padding = '16px';
         box.style.boxShadow = '0 14px 60px rgba(0,0,0,0.6)';
-        box.style.border = '2px solid';
-        box.style.borderImage = 'linear-gradient(90deg,#ff3b30,#ffffff) 1';
+        box.style.border = '2px solid #000000';
+        box.style.outline = '2px solid #000000';
         box.style.fontFamily = "Inter, system-ui, -apple-system, 'Segoe UI', Roboto, Arial";
         const h = document.createElement('div');
         h.style.fontSize = '16px';
         h.style.fontWeight = 800;
         h.style.marginBottom = '8px';
         h.style.textAlign = 'center';
-        h.textContent = title || '';
+        h.style.display = 'flex';
+        h.style.alignItems = 'center';
+        h.style.justifyContent = 'center';
+        h.style.gap = '8px';
+        const parts = extractEdgeEmojis(title || '');
+        const hEmoji = document.createElement('span');
+        hEmoji.textContent = parts.leading || parts.trailing || '';
+        hEmoji.style.fontSize = '18px';
+        hEmoji.style.lineHeight = '1';
+        hEmoji.style.color = '#ffffff';
+        const hText = document.createElement('span');
+        hText.style.color = 'transparent';
+        hText.style.backgroundImage = 'linear-gradient(90deg,#ffffff,#ff4d4d)';
+        hText.style.webkitBackgroundClip = 'text';
+        hText.style.backgroundClip = 'text';
+        hText.textContent = parts.core || (parts.leading && parts.trailing ? '' : (parts.leading || parts.trailing) ) || '';
+        h.appendChild(hEmoji);
+        h.appendChild(hText);
         const c = document.createElement('div');
         c.style.fontSize = '13px';
         c.style.marginBottom = '12px';
         c.style.whiteSpace = 'pre-wrap';
+        c.style.color = 'white';
         let textToCopy = null;
         if (typeof content === 'string') {
             const ta = document.createElement('textarea');
@@ -222,7 +478,7 @@
             ta.style.padding = '10px';
             ta.style.borderRadius = '8px';
             ta.style.background = '#070707';
-            ta.style.color = '#fff';
+            ta.style.color = 'white';
             ta.style.border = '1px solid rgba(255,255,255,0.04)';
             ta.value = content;
             textToCopy = content;
@@ -242,20 +498,20 @@
         copyBtn.style.border = 'none';
         copyBtn.style.cursor = 'pointer';
         copyBtn.style.fontWeight = 800;
-        copyBtn.style.background = 'linear-gradient(90deg,#ff3b30,#ff6b61)';
+        copyBtn.style.background = 'linear-gradient(90deg,#ff4d4d,#ff7373)';
         copyBtn.style.color = 'white';
         copyBtn.addEventListener('click', () => {
             if (textToCopy !== null) {
                 const res = copyToClipboard(textToCopy);
                 if (res && typeof res.then === 'function') {
                     res.then(ok => {
-                        showTopRightStatus(ok ? 'Copied!' : 'Copy failed', '', false);
+                        showTopRightStatus(ok ? 'Copied!' : 'Copy failed', '', '📋');
                     });
                 } else {
-                    showTopRightStatus(res ? 'Copied!' : 'Copy failed', '', false);
+                    showTopRightStatus(res ? 'Copied!' : 'Copy failed', '', '📋');
                 }
             } else {
-                showTopRightStatus('Nothing to copy', '', false);
+                showTopRightStatus('Nothing to copy', '', '📋');
             }
         });
         const primaryBtn = document.createElement('button');
@@ -265,7 +521,7 @@
         primaryBtn.style.border = 'none';
         primaryBtn.style.cursor = 'pointer';
         primaryBtn.style.fontWeight = 800;
-        primaryBtn.style.background = 'linear-gradient(90deg,#ff3b30,#ff6b61)';
+        primaryBtn.style.background = 'linear-gradient(90deg,#ff4d4d,#ff7373)';
         primaryBtn.style.color = 'white';
         primaryBtn.addEventListener('click', () => {
             try { if (onPrimary) onPrimary(); } catch (e) {}
@@ -278,7 +534,7 @@
         box.appendChild(c);
         box.appendChild(btnWrap);
         wrap.appendChild(box);
-        document.documentElement.appendChild(wrap);
+        document.body.appendChild(wrap);
     }
 
     function findFirstUrlInObj(obj) {
@@ -306,49 +562,99 @@
         return pageText.includes('Just a moment') || pageHTML.includes('Just a moment');
     }
 
-    function handleAbysmApiForCurrent() {
+    function easBypass(url) {
+        return new Promise((resolve, reject) => {
+            const fullUrl = url.startsWith('http') ? url : `https://${url}`;
+            if (typeof GM_xmlhttpRequest !== 'undefined') {
+                GM_xmlhttpRequest({
+                    method: 'POST',
+                    url: EAS_API_URL,
+                    headers: {
+                        'accept': 'application/json',
+                        'eas-api-key': EAS_API_KEY,
+                        'Content-Type': 'application/json'
+                    },
+                    data: JSON.stringify({ url: fullUrl }),
+                    onload: function(response) {
+                        try {
+                            const data = JSON.parse(response.responseText);
+                            resolve(data);
+                        } catch (e) {
+                            reject(new Error('Invalid JSON response'));
+                        }
+                    },
+                    onerror: function(error) {
+                        reject(error);
+                    },
+                    ontimeout: function() {
+                        reject(new Error('Request timeout'));
+                    }
+                });
+            } else {
+                fetch(EAS_API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'accept': 'application/json',
+                        'eas-api-key': EAS_API_KEY,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ url: fullUrl })
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => resolve(data))
+                .catch(error => reject(error));
+            }
+        });
+    }
+
+    function handleEasApiForCurrent() {
         try {
             const host = window.location.hostname || '';
-            const matched = API_HOSTS.some(h => isHostMatch(host, h));
+            const matched = EAS_API_HOSTS.some(h => isHostMatch(host, h));
             if (!matched) return false;
-            const currentFullUrl = location.href.startsWith('http') ? location.href : `https://${location.href}`;
-            const apiUrl = ABYSM_API_BASE + encodeURIComponent(currentFullUrl);
-            fetch(apiUrl, { method: 'GET' })
-                .then(r => r.json().catch(() => ({ status: 'error', message: 'invalid json' })))
-                .then(json => {
-                    const s = (json && (json.status || json.success));
-                    if (s === 'fail' || s === 'error' || s === false) {
-                        showTopRightStatus('bypass failed', '', false);
-                        return;
-                    }
-                    let resultVal = null;
-                    if (json && typeof json === 'object') {
-                        if (json.data && typeof json.data === 'object' && (typeof json.data.result !== 'undefined')) {
-                            resultVal = json.data.result;
-                        } else if (json.result) {
-                            resultVal = json.result;
-                        } else if (json.url) {
-                            resultVal = json.url;
-                        } else {
-                            resultVal = findFirstUrlInObj(json) || JSON.stringify(json);
+            const currentFullUrl = window.location.href;
+            const timerNotification = createTimerNotification();
+            easBypass(currentFullUrl).then(result => {
+                timerNotification.stop();
+                setTimeout(() => {
+                    timerNotification.remove();
+                    if (result && result.status === 'success' && result.result) {
+                        const resultVal = result.result;
+                        if (typeof resultVal === 'string' && resultVal.match(/^https?:\/\//i)) {
+                            showTopRightStatus('Redirecting...', '', '↪️');
+                            setTimeout(() => {
+                                try {
+                                    window.location.href = resultVal;
+                                } catch (e) {
+                                    showModalBox('🤑Bypassed Successfully', resultVal, 'Close');
+                                }
+                            }, 200);
+                            return;
                         }
-                    } else if (typeof json === 'string') {
-                        resultVal = json;
+                        if (typeof resultVal === 'string' && resultVal.trim().length > 0) {
+                            showModalBox('🤑Bypassed Successfully', resultVal, 'Close');
+                            return;
+                        }
+                        showModalBox('🤑Bypassed Successfully', JSON.stringify(result, null, 2), 'Close');
+                    } else if (result && result.status === 'error') {
+                        const errorMsg = result.message || result.error || result.result || 'Unknown error';
+                        showModalBox('⚠️Error', errorMsg, 'Close');
+                    } else {
+                        showTopRightStatus('Invalid response from EAS API', '', '❌');
                     }
-                    if (typeof resultVal === 'string' && resultVal.match(/^https?:\/\//i)) {
-                        showTopRightStatus('Redirecting...', '', false);
-                        setTimeout(() => { try { location.href = resultVal; } catch (e) { showModalBox('🤑Bypassed Successfully🤑', resultVal, 'Close'); } }, 200);
-                        return;
-                    }
-                    if (typeof resultVal === 'string' && resultVal.trim().length > 0) {
-                        showModalBox('🤑Bypassed Successfully🤑', resultVal, 'Close');
-                        return;
-                    }
-                    showModalBox('🤑Bypassed Successfully🤑', JSON.stringify(json, null, 2), 'Close');
-                })
-                .catch(() => {
-                    showTopRightStatus('bypass failed', '', false);
-                });
+                }, 1000);
+            }).catch(error => {
+                timerNotification.stop();
+                setTimeout(() => {
+                    timerNotification.remove();
+                    showTopRightStatus('bypass failed', '', '❌');
+                }, 1000);
+            });
             return true;
         } catch (e) {
             return false;
@@ -357,15 +663,15 @@
 
     function afkBypass_showModal(link) {
         if (typeof link === 'string' && link.match(/^https?:\/\//i)) {
-            try { location.href = link; } catch (e) { showModalBox('🤑Bypassed Successfully🤑', link, 'Redirect', () => { try { location.href = link; } catch (e) {} }); }
+            try { window.location.href = link; } catch (e) { showModalBox('🤑Bypassed Successfully', link, 'Redirect', () => { try { window.location.href = link; } catch (e) {} }); }
             return;
         }
-        showModalBox('🤑Bypassed Successfully🤑', typeof link === 'string' ? link : JSON.stringify(link, null, 2), 'Close');
+        showModalBox('🤑Bypassed Successfully', typeof link === 'string' ? link : JSON.stringify(link, null, 2), 'Close');
     }
 
     function handleBstlar() {
         if (hasCloudflare()) return;
-        const path = new URL(window.location.href).pathname.substring(1);
+        const path = window.location.pathname.substring(1);
         fetch(`https://bstlar.com/api/link?url=${encodeURIComponent(path)}`, {
             method: 'GET',
             headers: {
@@ -400,28 +706,28 @@
             try { parsed = JSON.parse(finalText); } catch (e) { parsed = null; }
             if (parsed && parsed.destination_url !== undefined) {
                 if (String(parsed.destination_url) === 'null' || parsed.destination_url === null) {
-                    showModalBox('🤑Bypassed Successfully🤑', 'Failed No Result Found Result Expired / Invalid', 'Close');
+                    showModalBox('🤑Bypassed Successfully', 'Failed No Result Found Result Expired / Invalid', 'Close');
                     return;
                 }
                 if (String(parsed.destination_url).match(/^https?:\/\//i)) {
-                    try { location.href = parsed.destination_url; } catch (e) { afkBypass_showModal(parsed.destination_url); }
+                    try { window.location.href = parsed.destination_url; } catch (e) { afkBypass_showModal(parsed.destination_url); }
                     return;
                 }
             }
             if (typeof finalText === 'string' && finalText.match(/^https?:\/\//i)) {
-                try { location.href = finalText; } catch (e) { afkBypass_showModal(finalText); }
+                try { window.location.href = finalText; } catch (e) { afkBypass_showModal(finalText); }
                 return;
             }
             afkBypass_showModal(finalText || 'No final link returned');
         })
         .catch(() => {
-            showTopRightStatus('bypass failed', '', false);
+            showTopRightStatus('bypass failed', '', '❌');
         });
     }
 
     function handleRekonise() {
         if (hasCloudflare()) return;
-        fetch(`https://api.rekonise.com/social-unlocks${location.pathname}/unlock`, {
+        fetch(`https://api.rekonise.com/social-unlocks${window.location.pathname}/unlock`, {
             method: 'GET',
             headers: {
                 accept: 'application/json, text/plain, */*',
@@ -436,15 +742,15 @@
             const txt = JSON.stringify(data);
             const url = findFirstUrlInObj(data) || (txt.match(/https?:\/\/[^\s"']+/) || [null])[0];
             if (url && typeof url === 'string' && url.match(/^https?:\/\//i)) {
-                try { location.href = url; } catch (e) { afkBypass_showModal(url); }
+                try { window.location.href = url; } catch (e) { afkBypass_showModal(url); }
             } else if (typeof data === 'string' && data.trim().length > 0) {
-                showModalBox('🤑Bypassed Successfully🤑', data, 'Close');
+                showModalBox('🤑Bypassed Successfully', data, 'Close');
             } else {
-                showModalBox('🤑Bypassed Successfully🤑', 'Error, please join Discord Server in the Greasyfork script.', 'Close');
+                showModalBox('🤑Bypassed Successfully', 'Error, please join Discord Server in the Greasyfork script.', 'Close');
             }
         })
         .catch(() => {
-            showTopRightStatus('bypass failed', '', false);
+            showTopRightStatus('bypass failed', '', '❌');
         });
     }
 
@@ -455,7 +761,7 @@
             if (matches.length > 0) {
                 const first = matches[0][1];
                 if (first && first.match(/^https?:\/\//i)) {
-                    try { location.href = first; } catch (e) { afkBypass_showModal(first); }
+                    try { window.location.href = first; } catch (e) { afkBypass_showModal(first); }
                     return;
                 }
                 afkBypass_showModal(first);
@@ -463,192 +769,18 @@
             } else {
                 const urlFromObj = findFirstUrlInObj(pageContent);
                 if (urlFromObj && urlFromObj.match(/^https?:\/\//i)) {
-                    try { location.href = urlFromObj; } catch (e) { afkBypass_showModal(urlFromObj); }
+                    try { window.location.href = urlFromObj; } catch (e) { afkBypass_showModal(urlFromObj); }
                     return;
                 }
                 if (urlFromObj) {
-                    showModalBox('🤑Bypassed Successfully🤑', urlFromObj, 'Close');
+                    showModalBox('🤑Bypassed Successfully', urlFromObj, 'Close');
                     return;
                 }
-                showModalBox('🤑Bypassed Successfully🤑', 'Could not find destination! Please join our Discord.', 'Close');
+                showModalBox('🤑Bypassed Successfully', 'Could not find destination! Please join our Discord.', 'Close');
             }
         } catch (e) {
-            showTopRightStatus('bypass failed', '', false);
+            showTopRightStatus('bypass failed', '', '❌');
         }
-    }
-
-    const hostname = window.location.hostname || '';
-    const allowedLootHosts = ['loot-link.com', 'loot-links.com', 'lootlink.org', 'lootlinks.co', 'lootdest.info', 'lootdest.org', 'lootdest.com', 'links-loot.com', 'linksloot.net'];
-
-    if (allowedLootHosts.includes(hostname)) {
-        (function() {
-            'use strict';
-            function decodeURI(encodedString, prefixLength = 5) {
-                let decodedString = '';
-                const base64Decoded = atob(encodedString);
-                const prefix = base64Decoded.substring(0, prefixLength);
-                const encodedPortion = base64Decoded.substring(prefixLength);
-                for (let i = 0; i < encodedPortion.length; i++) {
-                    const encodedChar = encodedPortion.charCodeAt(i);
-                    const prefixChar = prefix.charCodeAt(i % prefix.length);
-                    const decodedChar = encodedChar ^ prefixChar;
-                    decodedString += String.fromCharCode(decodedChar);
-                }
-                return decodedString;
-            }
-            (function() {
-                'use strict';
-                const waitForElementAndModifyParent = () => {
-                    const modifyParentElement = (targetElement) => {
-                        const parentElement = targetElement.parentElement;
-                        if (!parentElement) return;
-                        const images = document.querySelectorAll('img');
-                        let countdownSeconds = 60;
-                        for (let img of images) {
-                            const src = (img.src || '').toLowerCase();
-                            if (src.includes('eye.png')) {
-                                countdownSeconds = 13;
-                                break;
-                            } else if (src.includes('bell.png')) {
-                                countdownSeconds = 30;
-                                break;
-                            } else if (src.includes('apps.png') || src.includes('fire.png')) {
-                                countdownSeconds = 60;
-                                break;
-                            } else if (src.includes('gamers.png')) {
-                                countdownSeconds = 90;
-                                break;
-                            }
-                        }
-                        let fallbackHref = null;
-                        try {
-                            const anchor = parentElement.querySelector('a[href]');
-                            if (anchor && anchor.href) fallbackHref = anchor.href;
-                        } catch (e) {}
-                        parentElement.innerHTML = '';
-                        const popupHTML = `
-<div id="tm-overlay" style="position:fixed;top:0;left:0;width:100%;height:100%;z-index:999999;display:flex;justify-content:center;align-items:center;overflow:hidden;background:linear-gradient(180deg,#000,#0b0b0b);backdrop-filter:blur(6px);">
-    <div style="position:relative;z-index:1;display:flex;align-items:center;justify-content:center;width:100%;padding:20px;">
-        <div id="tm-popup" style="width:min(720px,94%);max-width:920px;padding:22px;border-radius:12px;background:linear-gradient(180deg,#000,#0b0b0b);border:2px solid;border-image:linear-gradient(90deg,#ff3b30,#ffffff) 1;box-shadow:0 10px 40px rgba(0,0,0,0.9);color:#fff;font-family:system-ui, -apple-system, 'Segoe UI', Roboto;text-align:center;">
-            <div style="display:flex;flex-direction:column;align-items:center;gap:12px;">
-                <div style="width:120px;height:120px;border-radius:12px;overflow:hidden;box-shadow:0 12px 36px rgba(0,0,0,0.6);background:#020617;display:flex;align-items:center;justify-content:center;">
-                    <img src="https://i.ibb.co/4RNS0jJk/A4-EE3695-AC86-4449-941-E-CF701-A019-D4-F.png" alt="logo" style="width:100%;height:100%;object-fit:cover;">
-                </div>
-                <div id="spinnerWrap" style="margin-top:6px;">
-                    <div class="loader" aria-hidden="true" style="width:40px;height:40px;border-width:4px;"></div>
-                </div>
-                <div style="font-size:18px;font-weight:700;color:#fff;margin-top:6px;">Please Wait While We Prepare Your Link</div>
-                <div id="countdown" style="font-size:14px;font-weight:600;color:#ddd;margin-top:6px;">Estimated ${countdownSeconds} seconds remaining</div>
-            </div>
-        </div>
-    </div>
-</div>
-                        `;
-                        parentElement.insertAdjacentHTML('afterbegin', popupHTML);
-                        const startCountdown = (duration, onTick, onFinish) => {
-                            let remaining = duration;
-                            const countdownEl = document.getElementById('countdown');
-                            const updateDisplay = () => {
-                                if (countdownEl) {
-                                    countdownEl.textContent = `Estimated ${remaining} seconds remaining`;
-                                }
-                            };
-                            updateDisplay();
-                            const intervalId = setInterval(() => {
-                                remaining--;
-                                try { if (onTick) onTick(remaining); } catch (e) {}
-                                updateDisplay();
-                                if (remaining <= 0) {
-                                    clearInterval(intervalId);
-                                    try { if (onFinish) onFinish(); } catch (e) {}
-                                }
-                            }, 1200);
-                            return { stop: () => clearInterval(intervalId) };
-                        };
-                        const spinnerCSS = `
-.loader {
-  width: 48px;
-  height: 48px;
-  border: 5px solid rgba(255,255,255,0.06);
-  border-top-color: #ff3b30;
-  border-radius: 50%;
-  animation: tm-spin 0.9s linear infinite;
-  margin: 0 auto;
-  box-sizing: border-box;
-}
-@keyframes tm-spin {
-  to { transform: rotate(360deg); }
-}
-                        `;
-                        try { localStorage.clear(); } catch (e) {}
-                        for(let i=0;i<100;i++)if(54!==i){try{var $="t_"+i;var t={value:1,expiry:new Date().getTime()+6048e5};localStorage.setItem($,JSON.stringify(t))}catch(e){}}
-                        startCountdown(countdownSeconds, null, () => {});
-                        const style = document.createElement('style');
-                        style.type = 'text/css';
-                        style.innerHTML = spinnerCSS;
-                        document.getElementsByTagName('head')[0].appendChild(style);
-                    };
-                    const observer = new MutationObserver((mutationsList, observer) => {
-                        for (const mutation of mutationsList) {
-                            if (mutation.type === 'childList') {
-                                const foundElement = Array.from(document.querySelectorAll('body *')).find(element => element.textContent && element.textContent.includes("UNLOCK CONTENT"));
-                                if (foundElement) {
-                                    modifyParentElement(foundElement);
-                                    observer.disconnect();
-                                    break;
-                                }
-                            }
-                        }
-                    });
-                    observer.observe(document.body, { childList: true, subtree: true });
-                };
-                if (document.readyState === 'loading') {
-                    document.addEventListener('DOMContentLoaded', waitForElementAndModifyParent);
-                } else {
-                    waitForElementAndModifyParent();
-                }
-            })();
-            (function() {
-                const originalFetch = window.fetch;
-                window.fetch = function(url, config) {
-                    if (url && url.includes && url.includes(`${INCENTIVE_SYNCER_DOMAIN}/tc`)) {
-                        return originalFetch(url, config).then(response => {
-                            if (!response.ok) return JSON.stringify(response);
-                            return response.clone().json().then(data => {
-                                let urid = "";
-                                let task_id = "";
-                                let action_pixel_url = "";
-                                data.forEach(item => {
-                                    urid = item.urid;
-                                    task_id = 54;
-                                    action_pixel_url = item.action_pixel_url;
-                                });
-                                try {
-                                    const ws = new WebSocket(`wss://${urid.substr(-5) % 3}.${INCENTIVE_SERVER_DOMAIN}/c?uid=${urid}&cat=${task_id}&key=${KEY}`);
-                                    ws.onopen = () => setInterval(() => { try { ws.send('0'); } catch(e) {} }, 1000);
-                                    ws.onmessage = event => {
-                                        if (event.data && event.data.includes('r:')) {
-                                            PUBLISHER_LINK = event.data.replace('r:', '');
-                                        }
-                                    };
-                                    try { navigator.sendBeacon(`https://${urid.substr(-5) % 3}.${INCENTIVE_SERVER_DOMAIN}/st?uid=${urid}&cat=${task_id}`); } catch(e) {}
-                                    try { fetch(action_pixel_url); } catch(e) {}
-                                    try { fetch(`https://${INCENTIVE_SYNCER_DOMAIN}/td?ac=1&urid=${urid}&&cat=${task_id}&tid=${TID}`); } catch(e) {}
-                                    ws.onclose = () => { try { window.location.href = decodeURIComponent(decodeURI(PUBLISHER_LINK)); } catch(e) {} };
-                                } catch(e) {}
-                                return new Response(JSON.stringify(data), {
-                                    status: response.status,
-                                    statusText: response.statusText,
-                                    headers: response.headers
-                                });
-                            });
-                        });
-                    }
-                    return originalFetch(url, config);
-                };
-            })();
-        })();
-        return;
     }
 
     (function () {
@@ -696,16 +828,16 @@
                 }
             } catch (e) {}
             return originalFetch(url, config);
-        };
-    })();
+    };
+})();
 
     function run() {
-        try { createTopRightNotification(); } catch (e) {}
+        try { showTopRightStatus('Successfully Loaded Userscript!', '', '🌪️'); } catch (e) {}
         try {
             const host = window.location.hostname || '';
-            const apiMatched = API_HOSTS.some(h => isHostMatch(host, h));
-            if (apiMatched) {
-                const used = handleAbysmApiForCurrent();
+            const easMatched = EAS_API_HOSTS.some(h => isHostMatch(host, h));
+            if (easMatched) {
+                const used = handleEasApiForCurrent();
                 if (used) return;
             }
             if (isHostMatch(host, 'bstlar.com')) {
