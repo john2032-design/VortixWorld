@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         VortixWorld Bypass
 // @namespace    afklolbypasser
-// @version      1.2.6
+// @version      1.2.7
 // @description  Bypass 💩
 // @author       afk.l0l
 // @match        *://loot-link.com/s?*
@@ -84,6 +84,7 @@
 // @match        *://pastemode.com/*
 // @match        *://rentry.org/*
 // @match        *://paster.so/*
+// @match        https://work.ink/*
 // @icon         https://i.ibb.co/4RNS0jJk/A4-EE3695-AC86-4449-941-E-CF701-A019-D4-F.png
 // @grant        GM_xmlhttpRequest
 // @license      MIT
@@ -109,6 +110,7 @@
 
     const EAS_API_KEY = ".john2032-3253f-3262k-3631f-2626j-9078k";
     const EAS_API_URL = "https://api.eas-x.com/v3/bypass";
+    const WORKINK_API_BASE = "https://api-workink.vercel.app/bypass?url=";
 
     let notificationCounter = 0;
     let notificationStack = [];
@@ -646,6 +648,48 @@
         });
     }
 
+    function handleWorkInk() {
+        if (hasCloudflare()) return;
+        const currentFullUrl = window.location.href;
+        const apiUrl = WORKINK_API_BASE + encodeURIComponent(currentFullUrl);
+        const timerNotification = createTimerNotification();
+        fetch(apiUrl, {
+            method: 'GET',
+            headers: {
+                accept: 'application/json'
+            }
+        }).then(r => r.json().catch(() => ({}))).then(data => {
+            timerNotification.stop();
+            try {
+                if (data && data.status === 'success') {
+                    const resultVal = data.result;
+                    if (typeof resultVal === 'string' && resultVal.match(/^https?:\/\//i)) {
+                        try { window.location.href = resultVal; } catch (e) { showModalBox('🤑Bypassed Successfully', resultVal, 'Close'); }
+                        return;
+                    }
+                    if (typeof resultVal === 'string' && resultVal.trim().length > 0) {
+                        showModalBox('🤑Bypassed Successfully', resultVal, 'Close');
+                        return;
+                    }
+                    showModalBox('🤑Bypassed Successfully', JSON.stringify(resultVal, null, 2), 'Close');
+                } else {
+                    const errMsg = (data && (data.message || data.error || JSON.stringify(data))) || 'Unknown error';
+                    showModalBox('⚠️WorkInk API Error', String(errMsg), 'Close');
+                }
+            } finally {
+                setTimeout(() => {
+                    timerNotification.remove();
+                }, 800);
+            }
+        }).catch(err => {
+            timerNotification.stop();
+            setTimeout(() => {
+                timerNotification.remove();
+                showTopRightStatus('bypass failed', '', '❌');
+            }, 800);
+        });
+    }
+
     function handleEasApiForCurrent() {
         try {
             const host = window.location.hostname || '';
@@ -869,6 +913,10 @@
         try { showTopRightStatus('Successfully Loaded Userscript!', '', '🌪️'); } catch (e) {}
         try {
             const host = window.location.hostname || '';
+            if (isHostMatch(host, 'work.ink')) {
+                handleWorkInk();
+                return;
+            }
             const easMatched = EAS_API_HOSTS.some(h => isHostMatch(host, h));
             if (easMatched) {
                 const used = handleEasApiForCurrent();
