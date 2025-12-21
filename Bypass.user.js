@@ -151,10 +151,29 @@
         return { leading, core, trailing };
     }
 
-    function createTopRightNotification(titleText, subtitleText, icon) {
+    function ensureStyles() {
+        if (document.getElementById('afkBypass-styles')) return;
+        const s = document.createElement('style');
+        s.id = 'afkBypass-styles';
+        s.textContent = `
+.afkBypass-timer-indeterminate{background: linear-gradient(90deg, rgba(255,31,31,0.15), #ff1f1f 40%, rgba(255,31,31,0.15)); background-size: 200% 100%; animation: afkBypass-indeterminate 1.6s linear infinite;}
+@keyframes afkBypass-indeterminate {0%{background-position:0% 50%}100%{background-position:200% 50%}}
+`;
+        document.head.appendChild(s);
+    }
+
+    function createTopRightNotification(titleText, subtitleText, icon, opts) {
+        opts = opts || {};
         notificationCounter++;
         const notificationId = `afkBypass-notification-${notificationCounter}`;
         if (document.getElementById(`${notificationId}-wrap`)) return notificationId;
+
+        const autoRemove = opts.autoRemove !== false;
+        const duration = (typeof opts.duration === 'number') ? opts.duration : 5000;
+        const timerDuration = (typeof opts.timerDuration === 'number') ? opts.timerDuration : duration;
+        const timerAnimated = !!opts.timerAnimated;
+
+        ensureStyles();
 
         const wrap = document.createElement('div');
         wrap.id = `${notificationId}-wrap`;
@@ -275,32 +294,42 @@
         timerBar.style.right = '12px';
         timerBar.style.bottom = '10px';
         timerBar.style.height = '2.5px';
-        timerBar.style.background = '#ff1f1f';
         timerBar.style.borderRadius = '3px';
-        timerBar.style.transform = 'scaleX(1)';
         timerBar.style.transformOrigin = 'left center';
-        timerBar.style.transition = 'transform 5s linear';
         timerBar.style.pointerEvents = 'none';
         timerBar.style.boxSizing = 'border-box';
+        if (timerAnimated) {
+            timerBar.classList.add('afkBypass-timer-indeterminate');
+            timerBar.style.transform = 'scaleX(1)';
+            timerBar.style.transition = 'none';
+        } else {
+            timerBar.style.background = '#ff1f1f';
+            timerBar.style.transform = 'scaleX(1)';
+            timerBar.style.transition = (timerDuration > 0) ? `transform ${timerDuration}ms linear` : 'none';
+        }
 
         n.appendChild(timerBar);
         wrap.appendChild(n);
         document.body.appendChild(wrap);
 
-        setTimeout(() => {
-            timerBar.style.transform = 'scaleX(0)';
-        }, 10);
+        if (!timerAnimated && timerDuration > 0) {
+            setTimeout(() => {
+                timerBar.style.transform = 'scaleX(0)';
+            }, 10);
+        }
 
-        setTimeout(() => {
-            const wrapEl = document.getElementById(`${notificationId}-wrap`);
-            if (wrapEl) {
-                wrapEl.style.opacity = '0';
-                setTimeout(() => {
-                    if (wrapEl.parentNode) wrapEl.parentNode.removeChild(wrapEl);
-                    updateNotificationPositions();
-                }, 300);
-            }
-        }, 5000);
+        if (autoRemove) {
+            setTimeout(() => {
+                const wrapEl = document.getElementById(`${notificationId}-wrap`);
+                if (wrapEl) {
+                    wrapEl.style.opacity = '0';
+                    setTimeout(() => {
+                        if (wrapEl.parentNode) wrapEl.parentNode.removeChild(wrapEl);
+                        updateNotificationPositions();
+                    }, 300);
+                }
+            }, duration);
+        }
 
         notificationStack.push(notificationId);
         updateNotificationPositions();
@@ -314,8 +343,7 @@
     }
 
     function createTimerNotification() {
-        const notificationId = createTopRightNotification('Processing Please Wait <3', 'Starting timer...', '⏰');
-        const notifWrap = document.getElementById(`${notificationId}-wrap`);
+        const notificationId = createTopRightNotification('Processing Please Wait <3', 'Starting timer...', '⏰', { autoRemove: false, timerAnimated: true });
         const notif = document.getElementById(notificationId);
         const textWrap = notif.querySelector('div:nth-child(2)');
         const subtitleEl = textWrap.children[1];
@@ -334,7 +362,6 @@
         return {
             id: notificationId,
             update: (newTitle, newSubtitle) => {
-                const wrapEl = document.getElementById(`${notificationId}-wrap`);
                 const notifEl = document.getElementById(notificationId);
                 if (notifEl) {
                     const textWrapLocal = notifEl.querySelector('div:nth-child(2)');
@@ -360,7 +387,14 @@
                     const subtitleLocal = textWrapLocal.children[1];
                     subtitleLocal.textContent = `Completed in: ${elapsed.toFixed(2)}s`;
                     const bar = document.getElementById(`${notificationId}-timer-bar`);
-                    if (bar) bar.style.transform = 'scaleX(0)';
+                    if (bar) {
+                        bar.classList.remove('afkBypass-timer-indeterminate');
+                        bar.style.background = '#ff1f1f';
+                        bar.style.transition = 'transform 200ms linear';
+                        setTimeout(() => {
+                            bar.style.transform = 'scaleX(0)';
+                        }, 10);
+                    }
                 }
             },
             remove: () => {
