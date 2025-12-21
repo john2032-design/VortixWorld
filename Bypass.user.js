@@ -562,7 +562,7 @@
                                     clearInterval(intervalId);
                                     try { if (onFinish) onFinish(); } catch (e) {}
                                 }
-                            }, 1000);
+                            }, 1200);
                             return { stop: () => clearInterval(intervalId) };
                         };
                         const spinnerCSS = `
