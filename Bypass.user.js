@@ -85,7 +85,7 @@
 // @match        *://rentry.org/*
 // @match        *://paster.so/*
 // @match        https://work.ink/*
-// @match        https://pandadeveloment.net/*
+// @match        https://pandadevelopment.net/*
 // @match        *://auth.platorelay.com/*
 // @match        *//keyrblx.com/*
 // @match        *//auth.platoboost.app/*
@@ -1041,7 +1041,7 @@
         "work.ink",
         "direct-link.net","link-target.net","link-to.net","link-center.net",
         "link-hub.net","up-to-down.net","linkvertise.com",
-        "auth.platorelay.com","auth.platoboost.me","auth.platoboost.app"
+        "auth.platorelay.com","auth.platoboost.me","auth.platoboost.app","pandadevelopment.net","keyrblx.com"
     ];
 
     const EAS_API_KEY = ".john2032-3253f-3262k-3631f-2626j-9078k";
