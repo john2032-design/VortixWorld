@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         VortixWorld Bypass
 // @namespace    afklolbypasser
-// @version      1.2.10
+// @version      1.2.11
 // @description  Bypass 💩
 // @author       afk.l0l
 // @match        *://loot-link.com/s?*
@@ -85,6 +85,11 @@
 // @match        *://rentry.org/*
 // @match        *://paster.so/*
 // @match        https://work.ink/*
+// @match        https://pandadeveloment.net/*
+// @match        *://auth.platorelay.com/*
+// @match        *//keyrblx.com/*
+// @match        *//auth.platoboost.app/*
+// @match        *//auth.platoboost.me/*
 // @icon         https://i.ibb.co/4RNS0jJk/A4-EE3695-AC86-4449-941-E-CF701-A019-D4-F.png
 // @grant        GM_xmlhttpRequest
 // @license      MIT
