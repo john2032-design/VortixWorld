@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         VortixWorld Bypass
 // @namespace    afklolbypasser
-// @version      1.2.7
+// @version      1.2.10
 // @description  Bypass 💩
 // @author       afk.l0l
 // @match        *://loot-link.com/s?*
@@ -95,23 +95,6 @@
 (function () {
     'use strict';
 
-    const EAS_API_HOSTS = [
-        "linkvertise.com","link-target.net","link-center.net","link-to.net",
-        "bit.ly","t.ly","jpeg.ly","tiny.cc","tinyurl.com","tinylink.onl",
-        "shorter.me","is.gd","v.gd","rebrand.ly","bst.gg","bst.wtf",
-        "boost.ink","sub2get.com","sub4unlock.io","sub4unlock.com",
-        "sub4unlock.net","subfinal.com","unlocknow.net","ytsubme.com",
-        "cuty.io","cuty.me","adfoc.us","justpaste.it","paste-drop.com",
-        "pastebin.com","pastecanyon.com","pastehill.com","pastemode.com",
-        "rentry.org","paster.so","loot-link.com","loot-links.com",
-        "lootlink.org","lootlinks.co","lootdest.info","lootdest.org",
-        "lootdest.com","links-loot.com","linksloot.net"
-    ];
-
-    const EAS_API_KEY = ".john2032-3253f-3262k-3631f-2626j-9078k";
-    const EAS_API_URL = "https://api.eas-x.com/v3/bypass";
-    const WORKINK_API_BASE = "https://api-workink.vercel.app/bypass?url=";
-
     let notificationCounter = 0;
     let notificationStack = [];
 
@@ -160,6 +143,7 @@
         s.textContent = `
 .afkBypass-timer-indeterminate{background: linear-gradient(90deg, rgba(255,31,31,0.15), #ff1f1f 40%, rgba(255,31,31,0.15)); background-size: 200% 100%; animation: afkBypass-indeterminate 1.6s linear infinite;}
 @keyframes afkBypass-indeterminate {0%{background-position:0% 50%}100%{background-position:200% 50%}}
+.afkBypass-countdown-number { font-weight: 800; font-size: 20px; margin-left: 8px; }
 `;
         document.head.appendChild(s);
     }
@@ -592,6 +576,16 @@
         return null;
     }
 
+    function extractAdsLuarmorUrl(value) {
+        try {
+            const s = typeof value === 'string' ? value : JSON.stringify(value || '');
+            const m = s.match(/https:\/\/ads\.luarmor\.net[^\s"'<>]*/i);
+            return m ? m[0] : null;
+        } catch (e) {
+            return null;
+        }
+    }
+
     function hasCloudflare() {
         const pageText = document.body && document.body.innerText ? document.body.innerText : '';
         const pageHTML = document.documentElement && document.documentElement.innerHTML ? document.documentElement.innerHTML : '';
@@ -648,6 +642,108 @@
         });
     }
 
+    function showCountdownRedirect(url, waitSeconds = 8) {
+        if (document.getElementById('afkBypass-countdown-modal')) return;
+        ensureStyles();
+
+        const wrap = document.createElement('div');
+        wrap.id = 'afkBypass-countdown-modal';
+        wrap.style.position = 'fixed';
+        wrap.style.top = '0';
+        wrap.style.left = '0';
+        wrap.style.width = '100%';
+        wrap.style.height = '100%';
+        wrap.style.display = 'flex';
+        wrap.style.alignItems = 'center';
+        wrap.style.justifyContent = 'center';
+        wrap.style.zIndex = 2147483647;
+        wrap.style.background = 'rgba(0,0,0,0.6)';
+
+        const box = document.createElement('div');
+        box.style.width = 'min(520px,94%)';
+        box.style.background = 'linear-gradient(180deg,#000,#0b0b0b)';
+        box.style.color = 'white';
+        box.style.borderRadius = '10px';
+        box.style.padding = '18px';
+        box.style.boxShadow = '0 14px 60px rgba(0,0,0,0.6)';
+        box.style.border = '2px solid #000000';
+        box.style.fontFamily = "Inter, system-ui, -apple-system, 'Segoe UI', Roboto, Arial";
+        box.style.textAlign = 'center';
+
+        const title = document.createElement('div');
+        title.style.fontSize = '16px';
+        title.style.fontWeight = 800;
+        title.style.marginBottom = '8px';
+        title.textContent = 'Wait to Redirect';
+
+        const msg = document.createElement('div');
+        msg.style.fontSize = '14px';
+        msg.style.marginBottom = '12px';
+        msg.style.color = 'white';
+        msg.textContent = 'Wait ';
+
+        const countdownNumber = document.createElement('span');
+        countdownNumber.className = 'afkBypass-countdown-number';
+        countdownNumber.textContent = String(waitSeconds);
+
+        const msgSuffix = document.createElement('span');
+        msgSuffix.textContent = ' seconds then click Next to redirect';
+
+        msg.appendChild(countdownNumber);
+        msg.appendChild(msgSuffix);
+
+        const btnWrap = document.createElement('div');
+        btnWrap.style.display = 'flex';
+        btnWrap.style.justifyContent = 'center';
+        btnWrap.style.gap = '10px';
+        btnWrap.style.marginTop = '12px';
+
+        const nextBtn = document.createElement('button');
+        nextBtn.textContent = 'Next';
+        nextBtn.disabled = true;
+        nextBtn.style.padding = '10px 16px';
+        nextBtn.style.borderRadius = '8px';
+        nextBtn.style.fontWeight = 800;
+        nextBtn.style.cursor = 'not-allowed';
+        nextBtn.style.border = 'none';
+        nextBtn.style.background = 'linear-gradient(90deg,#999,#b5b5b5)';
+        nextBtn.style.color = '#111';
+
+        btnWrap.appendChild(nextBtn);
+
+        box.appendChild(title);
+        box.appendChild(msg);
+        box.appendChild(btnWrap);
+        wrap.appendChild(box);
+        document.body.appendChild(wrap);
+
+        let remaining = parseInt(waitSeconds, 10) || 8;
+        countdownNumber.textContent = String(remaining);
+        const interval = setInterval(() => {
+            remaining -= 1;
+            if (remaining < 0) remaining = 0;
+            countdownNumber.textContent = String(remaining);
+            if (remaining <= 0) {
+                clearInterval(interval);
+                nextBtn.disabled = false;
+                nextBtn.style.cursor = 'pointer';
+                nextBtn.style.background = 'linear-gradient(90deg,#ff4d4d,#ff7373)';
+            }
+        }, 1000);
+
+        nextBtn.addEventListener('click', () => {
+            if (nextBtn.disabled) return;
+            clearInterval(interval);
+            try {
+                window.location.href = url;
+            } catch (e) {
+                showModalBox('🤑Bypassed Successfully', url, 'Close');
+            }
+            const el = document.getElementById('afkBypass-countdown-modal');
+            if (el && el.parentNode) el.parentNode.removeChild(el);
+        });
+    }
+
     function handleWorkInk() {
         if (hasCloudflare()) return;
         const currentFullUrl = window.location.href;
@@ -661,14 +757,20 @@
         }).then(r => r.json().catch(() => ({}))).then(data => {
             timerNotification.stop();
             try {
-                if (data && data.status === 'success') {
+                if (data && (data.status === 'success' || data.success === true)) {
                     const resultVal = data.result;
-                    if (typeof resultVal === 'string' && resultVal.match(/^https?:\/\//i)) {
-                        try { window.location.href = resultVal; } catch (e) { showModalBox('🤑Bypassed Successfully', resultVal, 'Close'); }
+                    const adsUrl = extractAdsLuarmorUrl(resultVal);
+                    if (adsUrl) {
+                        showCountdownRedirect(adsUrl, 8);
                         return;
                     }
                     if (typeof resultVal === 'string' && resultVal.trim().length > 0) {
-                        showModalBox('🤑Bypassed Successfully', resultVal, 'Close');
+                        const trimmed = resultVal.trim();
+                        if (trimmed.match(/^https?:\/\//i)) {
+                            try { window.location.href = trimmed; } catch (e) { showModalBox('🤑Bypassed Successfully', trimmed, 'Close'); }
+                            return;
+                        }
+                        showModalBox('🤑Bypassed Successfully', trimmed, 'Close');
                         return;
                     }
                     showModalBox('🤑Bypassed Successfully', JSON.stringify(resultVal, null, 2), 'Close');
@@ -701,18 +803,26 @@
                 timerNotification.stop();
                 setTimeout(() => {
                     timerNotification.remove();
-                    if (result && result.status === 'success' && result.result) {
+                    if (result && (result.status === 'success' || result.success === true) && result.result) {
                         const resultVal = result.result;
-                        if (typeof resultVal === 'string' && resultVal.match(/^https?:\/\//i)) {
-                            showTopRightStatus('Redirecting...', '', '↪️');
-                            setTimeout(() => {
-                                try {
-                                    window.location.href = resultVal;
-                                } catch (e) {
-                                    showModalBox('🤑Bypassed Successfully', resultVal, 'Close');
-                                }
-                            }, 200);
+                        const adsUrl = extractAdsLuarmorUrl(resultVal);
+                        if (adsUrl) {
+                            showCountdownRedirect(adsUrl, 8);
                             return;
+                        }
+                        if (typeof resultVal === 'string' && resultVal.trim().length > 0) {
+                            const trimmed = resultVal.trim();
+                            if (trimmed.match(/^https?:\/\//i)) {
+                                showTopRightStatus('Redirecting...', '', '↪️');
+                                setTimeout(() => {
+                                    try {
+                                        window.location.href = trimmed;
+                                    } catch (e) {
+                                        showModalBox('🤑Bypassed Successfully', trimmed, 'Close');
+                                    }
+                                }, 200);
+                                return;
+                            }
                         }
                         if (typeof resultVal === 'string' && resultVal.trim().length > 0) {
                             showModalBox('🤑Bypassed Successfully', resultVal, 'Close');
@@ -909,19 +1019,47 @@
     };
 })();
 
+    const EAS_API_HOSTS = [
+        "bit.ly","t.ly","jpeg.ly","tiny.cc","tinyurl.com","tinylink.onl",
+        "shorter.me","is.gd","v.gd","rebrand.ly","bst.gg","bst.wtf",
+        "boost.ink","sub2get.com","sub4unlock.io","sub4unlock.com",
+        "sub4unlock.net","subfinal.com","unlocknow.net","ytsubme.com",
+        "cuty.io","cuty.me","adfoc.us","justpaste.it","paste-drop.com",
+        "pastebin.com","pastecanyon.com","pastehill.com","pastemode.com",
+        "rentry.org","paster.so","loot-link.com","loot-links.com",
+        "lootlink.org","lootlinks.co","lootdest.info","lootdest.org",
+        "lootdest.com","links-loot.com","linksloot.net","bstlar.com",
+        "rekonise.com","mboost.me","socialwolvez.com","scwz.me"
+    ];
+
+    const WORKINK_HOSTS = [
+        "work.ink",
+        "direct-link.net","link-target.net","link-to.net","link-center.net",
+        "link-hub.net","up-to-down.net","linkvertise.com",
+        "auth.platorelay.com","auth.platoboost.me","auth.platoboost.app"
+    ];
+
+    const EAS_API_KEY = ".john2032-3253f-3262k-3631f-2626j-9078k";
+    const EAS_API_URL = "https://api.eas-x.com/v3/bypass";
+    const WORKINK_API_BASE = "https://api-workink.vercel.app/bypass?url=";
+
     function run() {
         try { showTopRightStatus('Successfully Loaded Userscript!', '', '🌪️'); } catch (e) {}
         try {
             const host = window.location.hostname || '';
-            if (isHostMatch(host, 'work.ink')) {
+
+            const workinkMatched = WORKINK_HOSTS.some(h => isHostMatch(host, h));
+            if (workinkMatched) {
                 handleWorkInk();
                 return;
             }
+
             const easMatched = EAS_API_HOSTS.some(h => isHostMatch(host, h));
             if (easMatched) {
                 const used = handleEasApiForCurrent();
                 if (used) return;
             }
+
             if (isHostMatch(host, 'bstlar.com')) {
                 handleBstlar();
                 return;
