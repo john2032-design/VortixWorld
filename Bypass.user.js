@@ -3,7 +3,7 @@
 // @namespace    https://vortix-world-bypass.vercel.app/
 // @version      1.2
 // @description  Bypass 💩Fr
-// @author       You
+// @author       VortixWorld
 // @icon         https://i.ibb.co/pvbSKgsL/BFB1896-C-9-FA4-4429-881-A-38074322-DFCB.png
 // @match        *://*.linkvertise.com/*
 // @match        *://linkvertise.com/*
