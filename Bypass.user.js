@@ -20,7 +20,7 @@
 // @match        *://*.links-loot.com/*
 // @match        *://links-loot.com/*
 // @match        *://*.loot-links.com/*
-// @match        *://loot-links.com/*
+// @match        *://loot-link.com/*
 // @match        *://*.best-links.org/*
 // @match        *://best-links.org/*
 // @match        *://*.lootlinks.com/*
