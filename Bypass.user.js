@@ -1,9 +1,9 @@
 // ==UserScript==
 // @name         VortixWorld BYPASSER
 // @namespace    https://vortix-world-bypass.vercel.app/
-// @version      1.0.3
-// @author       You
-// @description  Bypass ad-links using the VortixWorld API and go to the destination without ad pages
+// @version      1.0.4
+// @author       VortixWorld
+// @description  Bypass 💩 Fr
 // @match        *://linkvertise.com/*
 // @match        *://*.linkvertise.com/*
 // @match        *://lootlink.org/*
