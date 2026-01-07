@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         VortixWorld BYPASSER
 // @namespace    https://vortix-world-bypass.vercel.app/
-// @version      1.0.5
+// @version      1.0.6
 // @author       VortixWorld
 // @description  Bypass 💩 Fr
 // @match        *://linkvertise.com/*
@@ -40,6 +40,12 @@
 // @match        *://*.pandadevelopment.net/*
 // @match        *://mboost.me/*
 // @match        *://*.mboost.me/*
+// @match        *://airflowscript.com/*
+// @match        *://*airflowscript.com/*
+// @match        *://blox-script.com/*
+// @match        *://*blox-script.com/*
+// @match        *://neoxsoftworks.eu/*
+// @match        *://*neoxsoftworks.eu/*
 // @icon         https://i.ibb.co/p6Qjk6gP/BFB1896-C-9-FA4-4429-881-A-38074322-DFCB.png
 // @exclude      *://vortix-world-bypass.vercel.app/*
 // @downloadURL  https://raw.githubusercontent.com/john2032-design/VortixWorld/refs/heads/main/Bypass.user.js
