@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         VortixWorld BYPASSER
 // @namespace    https://vortix-world-bypass.vercel.app/
-// @version      1.0.6
+// @version      1.0.7
 // @author       VortixWorld
 // @description  Bypass 💩 Fr
 // @match        *://linkvertise.com/*
@@ -46,6 +46,14 @@
 // @match        *://*blox-script.com/*
 // @match        *://neoxsoftworks.eu/*
 // @match        *://*neoxsoftworks.eu/*
+// @match        *://cuty.io/*
+// @match        *://*.cuty.io/*
+// @match        *://cutynow.com/*
+// @match        *://*.cutynow.com/*
+// @match        *://cuttty.com/*
+// @match        *://*.cuttty.com/*
+// @match        *://cuttlinks.com/*
+// @match        *://*.cuttlinks.com/*
 // @icon         https://i.ibb.co/p6Qjk6gP/BFB1896-C-9-FA4-4429-881-A-38074322-DFCB.png
 // @exclude      *://vortix-world-bypass.vercel.app/*
 // @downloadURL  https://raw.githubusercontent.com/john2032-design/VortixWorld/refs/heads/main/Bypass.user.js
@@ -61,7 +69,8 @@
   const ALLOWED_SHORT_HOSTS = [
     'linkvertise.com','lootlink.org','lootlinks.co','lootdest.info','lootdest.org','lootdest.com',
     'links-loot.com','loot-links.com','best-links.org','lootlinks.com','loot-labs.com','lootlabs.com',
-    'loot-link.com','work.ink','auth.platorelay.com','keyrblx.com','pandadevelopment.net'
+    'loot-link.com','work.ink','auth.platorelay.com','keyrblx.com','pandadevelopment.net',
+    'cuty.io','cutynow.com','cuttty.com','cuttlinks.com'
   ]
   const originalCreateElement = document.createElement.bind(document)
   document.createElement = function (elementName) {
