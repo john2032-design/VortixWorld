@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         VortixWorld BYPASSER
 // @namespace    https://vortix-world-bypass.vercel.app/
-// @version      1.0.7
+// @version      1.0.8
 // @author       VortixWorld
 // @description  Bypass 💩 Fr
 // @match        *://linkvertise.com/*
@@ -41,11 +41,11 @@
 // @match        *://mboost.me/*
 // @match        *://*.mboost.me/*
 // @match        *://airflowscript.com/*
-// @match        *://*airflowscript.com/*
+// @match        *://*.airflowscript.com/*
 // @match        *://blox-script.com/*
-// @match        *://*blox-script.com/*
+// @match        *://*.blox-script.com/*
 // @match        *://neoxsoftworks.eu/*
-// @match        *://*neoxsoftworks.eu/*
+// @match        *://*.neoxsoftworks.eu/*
 // @match        *://cuty.io/*
 // @match        *://*.cuty.io/*
 // @match        *://cutynow.com/*
@@ -54,6 +54,8 @@
 // @match        *://*.cuttty.com/*
 // @match        *://cuttlinks.com/*
 // @match        *://*.cuttlinks.com/*
+// @match        *://ads.luarmor.net/*
+// @match        *://*.ads.luarmor.net/*
 // @icon         https://i.ibb.co/p6Qjk6gP/BFB1896-C-9-FA4-4429-881-A-38074322-DFCB.png
 // @exclude      *://vortix-world-bypass.vercel.app/*
 // @downloadURL  https://raw.githubusercontent.com/john2032-design/VortixWorld/refs/heads/main/Bypass.user.js
@@ -61,8 +63,117 @@
 // @grant        none
 // @run-at       document-start
 // ==/UserScript==
+
 (async function () {
   'use strict'
+
+  if (location.hostname.includes('ads.luarmor.net')) {
+    let lastClickTime = 0
+    const CLICK_DELAY = 20000
+
+    function clickElement(el) {
+      if (!el) return false
+
+      const now = Date.now()
+      if (now - lastClickTime < CLICK_DELAY) return false
+
+      const rect = el.getBoundingClientRect()
+      if (el.disabled || rect.width === 0 || rect.height === 0) return false
+
+      el.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }))
+      lastClickTime = now
+      return true
+    }
+
+    const buttonObserver = new MutationObserver(mutations => {
+      mutations.forEach(mutation => {
+        mutation.addedNodes.forEach(node => {
+          if (node.nodeType !== Node.ELEMENT_NODE) return
+
+          const nodeText = (node.textContent || '').toLowerCase()
+          if (
+            node.matches?.('.swal2-confirm, .swal2-styled, [class*="confirm"]') ||
+            nodeText.includes('i accept') ||
+            nodeText.includes('accept') ||
+            nodeText.includes('continue') ||
+            nodeText.includes('next') ||
+            nodeText.includes('proceed') ||
+            nodeText.includes('start')
+          ) {
+            clickElement(node)
+          }
+
+          node.querySelectorAll?.(
+            '.swal2-confirm, .swal2-styled, button, [role="button"], [class*="confirm"], [class*="btn"]'
+          ).forEach(el => {
+            const elText = (el.textContent || el.value || '').toLowerCase()
+            if (
+              elText.includes('accept') ||
+              elText.includes('ok') ||
+              elText.includes('confirm') ||
+              elText.includes('continue') ||
+              elText.includes('next') ||
+              elText.includes('proceed') ||
+              elText.includes('start') ||
+              elText.includes('go') ||
+              elText.includes('get key') ||
+              elText.includes('verify') ||
+              elText.includes('complete') ||
+              elText.includes('claim')
+            ) {
+              clickElement(el)
+            }
+          })
+        })
+      })
+    })
+
+    buttonObserver.observe(document.documentElement, {
+      childList: true,
+      subtree: true
+    })
+
+    const autoClickInterval = setInterval(() => {
+      if (!location.href.includes('ads.luarmor.net')) {
+        clearInterval(autoClickInterval)
+        buttonObserver.disconnect()
+        return
+      }
+
+      const goodTexts = [
+        'next', 'continue', 'proceed', 'start', 'go',
+        'get key', 'verify', 'complete', 'claim', 'submit',
+        'accept', 'ok', 'confirm'
+      ]
+
+      const selectors = 'button, a[role="button"], div[role="button"], input[type="button"], input[type="submit"], [class*="btn"], [class*="button"]'
+
+      function processDoc(doc) {
+        if (!doc) return
+        doc.querySelectorAll(selectors).forEach(el => {
+          const rect = el.getBoundingClientRect()
+          if (el.disabled || rect.width === 0 || rect.height === 0) return
+
+          const text = (el.textContent || el.value || el.innerText || '').toLowerCase().trim()
+          if (goodTexts.some(t => text.includes(t))) {
+            clickElement(el)
+          }
+        })
+      }
+
+      processDoc(document)
+
+      Array.from(document.querySelectorAll('iframe')).forEach(iframe => {
+        try {
+          const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document
+          if (iframeDoc) processDoc(iframeDoc)
+        } catch (e) {}
+      })
+    }, 500)
+
+    return
+  }
+
   const config = { time: 10 }
   const SITE_HOST = 'vortix-world-bypass.vercel.app'
   const TARGET = 'https://' + SITE_HOST + '/userscript.html'
@@ -72,6 +183,7 @@
     'loot-link.com','work.ink','auth.platorelay.com','keyrblx.com','pandadevelopment.net',
     'cuty.io','cutynow.com','cuttty.com','cuttlinks.com'
   ]
+
   const originalCreateElement = document.createElement.bind(document)
   document.createElement = function (elementName) {
     const el = originalCreateElement(elementName)
@@ -80,11 +192,13 @@
     }
     return el
   }
+
   function isAllowedHost(host) {
     if (!host) return false
     const h = host.toLowerCase().replace(/^www\./, '')
     return ALLOWED_SHORT_HOSTS.includes(h)
   }
+
   const params = new URLSearchParams(location.search)
   const redirectParam = params.get('redirect')
   if (redirectParam) {
@@ -99,13 +213,15 @@
     }
     return
   }
+
   if (!isAllowedHost(location.hostname)) {
     setTimeout(() => {
       location.href = TARGET + '?url=' + encodeURIComponent(location.href) + '&time=' + encodeURIComponent(config.time)
     }, 1200)
     return
   }
-  document.documentElement.innerHTML = '<html><head><title>VortixWorld USERSCRIPT</title><meta name="viewport" content="width=device-width,initial-scale=1"/></head><body style="height:100%;margin:0;padding:0;background:linear-gradient(135deg,#000000 0%,#071033 60%,#1e2be8 100%);color:#ffffff;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;display:flex;align-items:center;justify-content:center;text-align:center;"><div style="max-width:760px;padding:28px;border-radius:12px;background:linear-gradient(180deg,rgba(255,255,255,0.02),rgba(0,0,0,0.06));box-shadow:0 20px 60px rgba(0,0,0,0.6);"><div style="margin-bottom:18px;"><svg width=\"84\" height=\"84\" viewBox=\"0 0 24 24\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\" style=\"border-radius:12px;background:rgba(255,255,255,0.03);padding:10px;box-shadow:0 6px 18px rgba(0,0,0,0.4)\"><path d=\"M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z\" fill=\"white\" opacity=\"0.96\"></path></svg></div><div style=\"font-weight:800;font-size:22px;margin-bottom:8px\">Redirecting...</div><div style=\"color:rgba(255,255,255,0.9);margin-bottom:18px;font-size:14px\">Please wait while VortixWorld prepares the bypass page.</div><div style=\"margin:0 auto 14px auto;width:56px;height:56px;border-radius:50%;border:6px solid rgba(255,255,255,0.08);border-top-color:rgba(255,255,255,0.95);animation:vbspin 1s linear infinite\"></div><div style=\"height:8px;border-radius:999px;background:linear-gradient(90deg,#000 0%,#0f1b4f 40%,#1e2be8 100%);margin-top:18px;box-shadow:0 6px 24px rgba(30,43,232,0.24)\"></div></div><style>@keyframes vbspin{100%{transform:rotate(360deg)}}</style></body></html>'
+
+  document.documentElement.innerHTML = '<html><head><title>VortixWorld USERSCRIPT</title><meta name="viewport" content="width=device-width,initial-scale=1"/></head><body style="height:100%;margin:0;padding:0;background:linear-gradient(135deg,#000000 0%,#071033 60%,#1e2be8 100%);color:#ffffff;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;display:flex;align-items:center;justify-content:center;text-align:center;"><div style="max-width:760px;padding:28px;border-radius:12px;background:linear-gradient(180deg,rgba(255,255,255,0.02),rgba(0,0,0,0.06));box-shadow:0 20px 60px rgba(0,0,0,0.6);"><div style="margin-bottom:18px;"><svg width="84" height="84" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="border-radius:12px;background:rgba(255,255,255,0.03);padding:10px;box-shadow:0 6px 18px rgba(0,0,0,0.4)"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" fill="white" opacity="0.96"></path></svg></div><div style="font-weight:800;font-size:22px;margin-bottom:8px">Redirecting...</div><div style="color:rgba(255,255,255,0.9);margin-bottom:18px;font-size:14px">Please wait while VortixWorld prepares the bypass page.</div><div style="margin:0 auto 14px auto;width:56px;height:56px;border-radius:50%;border:6px solid rgba(255,255,255,0.08);border-top-color:rgba(255,255,255,0.95);animation:vbspin 1s linear infinite"></div><div style="height:8px;border-radius:999px;background:linear-gradient(90deg,#000 0%,#0f1b4f 40%,#1e2be8 100%);margin-top:18px;box-shadow:0 6px 24px rgba(30,43,232,0.24)"></div></div><style>@keyframes vbspin{100%{transform:rotate(360deg)}}</style></body></html>'
   setTimeout(() => {
     location.href = TARGET + '?url=' + encodeURIComponent(location.href) + '&time=' + encodeURIComponent(config.time)
   }, 850)
