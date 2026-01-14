@@ -405,6 +405,10 @@ Copy Link
                 state.processStartTime = Date.now();
 
                 parentElement.innerHTML = '';
+                
+                if(document.getElementById('modern-bypass-overlay')) {
+                    document.getElementById('modern-bypass-overlay').remove();
+                }
 
                 const popupHTML = `
 <div id="modern-bypass-overlay">
@@ -442,7 +446,7 @@ Copy Link
 </div>
 </div>
 `;
-                parentElement.insertAdjacentHTML('afterbegin', popupHTML);
+                document.documentElement.insertAdjacentHTML('afterbegin', popupHTML);
                 Logger.info('✅ UI overlay injected successfully');
 
                 try {
