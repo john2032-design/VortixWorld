@@ -537,7 +537,6 @@ Copy Link
                 setupObserver();
             }
 
-            // Run observer logic immediately
             initUIAndObserver();
         }
     };
