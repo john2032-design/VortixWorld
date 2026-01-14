@@ -457,7 +457,6 @@ Copy Link
                     const updateInterval = 1000;
 
                     if (countdownDisplay) countdownDisplay.textContent = remaining;
-                    Logger.info('⏱️ Countdown started');
 
                     const timer = setInterval(() => {
                         if (state.bypassSuccessful) {
@@ -466,7 +465,6 @@ Copy Link
                         }
 
                         remaining--;
-                        Logger.info('📉 Countdown progress snapshot: ' + remaining + 's remaining');
 
                         if (countdownDisplay) countdownDisplay.textContent = remaining > 0 ? remaining : '0';
 
@@ -478,7 +476,6 @@ Copy Link
 
                         if (remaining <= 0) {
                             clearInterval(timer);
-                            Logger.info('⏱️ Countdown finished');
                         }
                     }, updateInterval);
 
