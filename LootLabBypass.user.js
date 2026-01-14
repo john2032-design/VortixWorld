@@ -2,7 +2,7 @@
 // @name         VortixWorld Lootlinks Bypass
 // @namespace    afklolbypasser
 // @version      7.5
-// @description  Bypass lootllinks with integrated features
+// @description  Bypass lootllinks
 // @author       afk.l0l
 // @match        *://loot-link.com/s?*
 // @match        *://loot-links.com/s?*
