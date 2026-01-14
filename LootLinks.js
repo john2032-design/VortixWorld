@@ -491,6 +491,17 @@ Copy Link
             function initUIAndObserver() {
                 Logger.info('👀 MutationObserver started');
 
+                // Check immediately for element
+                const immediateCheck = Array.from(document.querySelectorAll('*')).find(el =>
+                    el.textContent && (el.textContent.includes('UNLOCK CONTENT') || el.textContent.includes('Unlock Content'))
+                );
+
+                if (immediateCheck) {
+                    Logger.info('🔓 Unlock content element found immediately');
+                    modifyParentElement(immediateCheck);
+                    return;
+                }
+
                 const setupObserver = () => {
                     const observer = new MutationObserver((mutationsList, observerRef) => {
                         for (const mutation of mutationsList) {
@@ -526,11 +537,8 @@ Copy Link
                 setupObserver();
             }
 
-            if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', initUIAndObserver);
-            } else {
-                initUIAndObserver();
-            }
+            // Run observer logic immediately
+            initUIAndObserver();
         }
     };
 })();
