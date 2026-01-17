@@ -1,37 +1,313 @@
 window.VortixLootlink = (function() {
-    const LOGO_SRC = 'https://i.ibb.co/p6Qjk6gP/BFB1896-C-9-FA4-4429-881-A-38074322-DFCB.png';
+    const CUSTOM_ICON = "https://i.ibb.co/cKy9ztXL/IMG-3412.png";
+    const CUSTOM_ICON_HTML = `<img src="${CUSTOM_ICON}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
+    const BYPASS_SITE_URL = "https://vortix-world-bypass.vercel.app/userscript.html?time=10&url=";
 
     const CSS = `
-        #vw-loot-overlay {
-            position: fixed !important; top: 0 !important; left: 0 !important;
-            width: 100vw !important; height: 100vh !important;
-            background: linear-gradient(135deg, #020617, #000000) !important;
-            z-index: 2147483640 !important;
-            display: flex !important; flex-direction: column !important;
-            align-items: center !important; justify-content: center !important;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
-            color: #fff !important;
+        .text-gradient {
+            background: linear-gradient(90deg, #000000, #0000ff) !important;
+            -webkit-background-clip: text !important;
+            -webkit-text-fill-color: transparent !important;
+            background-clip: text !important;
+            color: #0000ff !important;
         }
-        .bh-header-bar { position: fixed; top: 0; left: 0; width: 100%; height: 80px; padding: 0 40px; display: flex; align-items: center; justify-content: space-between; background: rgba(2, 6, 23, 0.95); border-bottom: 1px solid #1e293b; z-index: 2147483642; box-shadow: 0 4px 15px rgba(0,0,0,0.5); backdrop-filter: blur(10px); box-sizing: border-box; }
-        .bh-title { font-weight: 800; font-size: 24px; color: #38bdf8; display: flex; align-items: center; gap: 15px; }
-        .bh-header-icon { height: 35px; width: 35px; border-radius: 50%; object-fit: cover; border: 2px solid #38bdf8; }
-        .bh-icon-img { width: 80px; height: 80px; border-radius: 16px; margin-bottom: 25px; box-shadow: 0 0 25px rgba(56, 189, 248, 0.25); object-fit: cover; }
-        .bh-status { font-size: 22px; font-weight: 700; text-align: center; margin-bottom: 10px; }
-        .bh-substatus { font-size: 15px; color: #94a3b8; text-align: center; margin-bottom: 15px; }
-        .bh-spinner-container { position: relative; width: 60px; height: 60px; margin-bottom: 30px; }
-        .bh-spinner-outer { position: absolute; width: 100%; height: 100%; border: 4px solid transparent; border-top: 4px solid #38bdf8; border-right: 4px solid #38bdf8; border-radius: 50%; animation: bh-spin 1s linear infinite; }
-        .bh-spinner-inner { position: absolute; top: 8px; left: 8px; width: 44px; height: 44px; border: 4px solid transparent; border-bottom: 4px solid #7dd3fc; border-left: 4px solid #7dd3fc; border-radius: 50%; animation: bh-spin-reverse 0.8s linear infinite; }
-        .bh-spinner-dot { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 10px; height: 10px; background: #38bdf8; border-radius: 50%; animation: bh-pulse 1s ease-in-out infinite; }
-        @keyframes bh-spin { 100% { transform: rotate(360deg); } }
-        @keyframes bh-spin-reverse { 100% { transform: rotate(-360deg); } }
-        @keyframes bh-pulse { 50% { opacity: 0.5; transform: translate(-50%, -50%) scale(0.8); } }
+
+        #baconHubOverlay {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            background: #ffffff !important;
+            z-index: 2147483647 !important;
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: center !important;
+            justify-content: center !important;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
+            opacity: 1 !important;
+            visibility: visible !important;
+            pointer-events: auto !important;
+            box-sizing: border-box !important;
+        }
+        #baconHubOverlay * { box-sizing: border-box !important; }
+
+        .bh-header-bar {
+            position: absolute !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100% !important;
+            height: 80px !important;
+            padding: 0 40px !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: space-between !important;
+            background: rgba(255, 255, 255, 0.95) !important;
+            border-bottom: 2px solid #e0e0e0 !important;
+            z-index: 2147483649 !important;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1) !important;
+            backdrop-filter: blur(10px) !important;
+        }
+
+        .bh-title {
+            font-weight: 800 !important;
+            font-size: 24px !important;
+            display: flex !important;
+            align-items: center !important;
+            gap: 15px !important;
+        }
+        
+        .bh-header-icon {
+            height: 35px !important;
+            width: 35px !important;
+            border-radius: 50% !important;
+            object-fit: cover !important;
+            border: 2px solid #0000ff !important;
+        }
+
+        .bh-main-content {
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: center !important;
+            justify-content: center !important;
+            width: 100% !important;
+            max-width: 600px !important;
+            animation: bh-fade-in 0.6s ease-out !important;
+            position: relative !important;
+            z-index: 2147483648 !important;
+            padding-top: 60px !important; 
+        }
+
+        .bh-icon-img {
+            width: 80px !important;
+            height: 80px !important;
+            border-radius: 16px !important;
+            margin-bottom: 25px !important;
+            box-shadow: 0 5px 25px rgba(0, 0, 0, 0.1) !important;
+            object-fit: cover !important;
+        }
+
+        .bh-spinner-container {
+            position: relative !important;
+            width: 60px !important;
+            height: 60px !important;
+            margin-bottom: 30px !important;
+        }
+        .bh-spinner-outer {
+            position: absolute !important;
+            width: 100% !important; height: 100% !important;
+            border: 4px solid transparent !important;
+            border-top: 4px solid #0000ff !important;
+            border-right: 4px solid #0000ff !important;
+            border-radius: 50% !important;
+            animation: bh-spin 1s linear infinite !important;
+        }
+        .bh-spinner-inner {
+            position: absolute !important;
+            top: 8px !important; left: 8px !important;
+            width: 44px !important; height: 44px !important;
+            border: 4px solid transparent !important;
+            border-bottom: 4px solid #000000 !important;
+            border-left: 4px solid #000000 !important;
+            border-radius: 50% !important;
+            animation: bh-spin-reverse 0.8s linear infinite !important;
+        }
+        
+        @keyframes bh-spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        @keyframes bh-spin-reverse { 0% { transform: rotate(0deg); } 100% { transform: rotate(-360deg); } }
+        @keyframes bh-fade-in { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+        .bh-status { 
+            font-size: 22px !important; 
+            font-weight: 800 !important; 
+            text-align: center !important; 
+            margin-bottom: 10px !important;
+        }
+        .bh-substatus { 
+            font-size: 15px !important; 
+            color: #666 !important; 
+            text-align: center !important;
+            font-weight: 500 !important;
+            margin-bottom: 20px !important;
+        }
+
+        .bh-result-area {
+            width: 80% !important;
+            display: none !important;
+            flex-direction: column !important;
+            gap: 15px !important;
+            margin-top: 30px !important;
+        }
+        .bh-input {
+            width: 100% !important;
+            background: #f5f5f5 !important;
+            border: 2px solid #0000ff !important;
+            color: #000 !important;
+            padding: 16px !important;
+            border-radius: 8px !important;
+            font-size: 14px !important;
+            outline: none !important;
+            font-family: monospace !important;
+            text-align: center !important;
+        }
+        .bh-btn {
+            background: linear-gradient(135deg, #000000, #0000ff) !important;
+            color: #fff !important;
+            border: none !important;
+            padding: 16px 20px !important;
+            border-radius: 8px !important;
+            font-weight: 800 !important;
+            cursor: pointer !important;
+            width: 100% !important;
+            text-transform: uppercase !important;
+            transition: all 0.2s !important;
+            font-size: 15px !important;
+            letter-spacing: 1px !important;
+        }
+        .bh-btn:hover { opacity: 0.9 !important; transform: translateY(-2px) !important; }
+
+        .bh-alt-btn {
+            background: transparent !important;
+            color: #0000ff !important;
+            border: 2px solid #0000ff !important;
+            padding: 10px 20px !important;
+            border-radius: 8px !important;
+            font-weight: 700 !important;
+            cursor: pointer !important;
+            margin-top: 15px !important;
+            font-size: 14px !important;
+            transition: all 0.2s !important;
+        }
+        .bh-alt-btn:hover { background: rgba(0,0,255,0.05) !important; }
+        
+        #bhNotificationContainer {
+            position: fixed !important;
+            top: 20px !important;
+            right: 20px !important;
+            z-index: 2147483650 !important;
+            display: flex !important;
+            flex-direction: column !important;
+            gap: 12px !important;
+            pointer-events: none !important;
+            align-items: flex-end !important;
+            transform: translateZ(9999px) !important;
+        }
+        .bh-notif-toast {
+            background: #ffffff !important;
+            border-left: 5px solid #0000ff !important;
+            border-radius: 8px !important;
+            width: 250px !important;
+            max-width: 90vw !important;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.15) !important;
+            overflow: hidden !important;
+            animation: bh-slide-in 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards !important;
+            display: flex !important;
+            flex-direction: column !important;
+            pointer-events: auto !important;
+            flex-shrink: 0 !important;
+            border: 1px solid #eee !important;
+        }
+        .bh-notif-content {
+            padding: 10px !important;
+            display: flex !important;
+            align-items: center !important;
+            gap: 10px !important;
+            font-weight: 800 !important;
+            font-size: 13px !important;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
+        }
+        .bh-icon-circle {
+            width: 26px !important;
+            height: 26px !important;
+            border-radius: 50% !important;
+            background: transparent !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            font-size: 14px !important;
+            overflow: hidden !important;
+        }
+        .bh-notif-bar {
+            height: 3px !important;
+            background: linear-gradient(90deg, #000000, #0000ff) !important;
+            width: 100% !important;
+            animation: bh-progress linear forwards !important;
+        }
+        @keyframes bh-slide-in { from { transform: translateX(120%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        @keyframes bh-fade-out { from { opacity: 1; transform: scale(1); } to { opacity: 0; transform: scale(0.9); pointer-events: none; } }
+        @keyframes bh-progress { from { width: 100%; } to { width: 0%; } }
+
+        @media (max-width: 480px) {
+            .bh-header-bar { padding: 0 15px !important; }
+            .bh-title { font-size: 18px !important; }
+            #bhNotificationContainer { top: 90px !important; right: 10px !important; }
+        }
     `;
+
+    const uiHTML = `
+        <div id="baconHubOverlay">
+            <div class="bh-header-bar">
+                <div class="bh-title text-gradient">
+                    <img src="${CUSTOM_ICON}" class="bh-header-icon" alt="Icon">
+                    VortixWorld
+                </div>
+            </div>
+            <div class="bh-main-content">
+                <img src="${CUSTOM_ICON}" class="bh-icon-img" alt="VortixWorld">
+                <div id="bhSpinnerContainer" class="bh-spinner-container">
+                    <div class="bh-spinner-outer"></div>
+                    <div class="bh-spinner-inner"></div>
+                </div>
+                <div id="bhStatus" class="bh-status text-gradient">Initializing...</div>
+                <div id="bhSubStatus" class="bh-substatus">Waiting for page to load</div>
+                
+                <button id="bhBypassSiteBtn" class="bh-alt-btn">Use Bypass Site</button>
+
+                <div id="bhResult" class="bh-result-area">
+                    <input type="text" id="bhUrlInput" class="bh-input" readonly placeholder="URL will appear here">
+                    <button id="bhCopyBtn" class="bh-btn">📋 Copy URL</button>
+                </div>
+            </div>
+        </div>
+    `;
+
+    function injectStyles() {
+        if (document.getElementById('baconHubStyles')) return;
+        const styleSheet = document.createElement("style");
+        styleSheet.id = 'baconHubStyles';
+        styleSheet.innerText = CSS;
+        (document.head || document.documentElement).appendChild(styleSheet);
+    }
+
+    function spawnNotification(text, iconContent = CUSTOM_ICON_HTML, duration = 5000) {
+        let container = document.getElementById('bhNotificationContainer');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'bhNotificationContainer';
+            (document.documentElement).appendChild(container);
+        }
+
+        const notif = document.createElement('div');
+        notif.className = 'bh-notif-toast';
+        notif.innerHTML = `
+            <div class="bh-notif-content">
+                <div class="bh-icon-circle">${iconContent}</div>
+                <span class="text-gradient">${text}</span>
+            </div>
+            <div class="bh-notif-bar" style="animation-duration: ${duration}ms;"></div>
+        `;
+        container.appendChild(notif);
+        setTimeout(() => {
+            notif.style.animation = 'bh-fade-out 0.5s ease-in forwards';
+            setTimeout(() => notif.remove(), 500);
+        }, duration);
+    }
 
     function updateStatus(main, sub) {
         const m = document.getElementById('bhStatus');
         const s = document.getElementById('bhSubStatus');
-        if(m) m.innerText = main;
-        if(s) s.innerText = sub;
+        if (m) m.innerText = main;
+        if (s) s.innerText = sub;
     }
 
     function decodeURI(encodedString, prefixLength = 5) {
@@ -45,31 +321,72 @@ window.VortixLootlink = (function() {
         return decodedString;
     }
 
+    function notifLoop() {
+        const msgs = [
+            { icon: CUSTOM_ICON_HTML, text: "VortixWorld" },
+            { icon: "👑", text: "Created By @afk.l0l" },
+            { icon: CUSTOM_ICON_HTML, text: "Lootlink Bypasser" }
+        ];
+        let idx = 0;
+        const show = () => {
+            spawnNotification(msgs[idx].text, msgs[idx].icon, 3500);
+            idx = (idx + 1) % msgs.length;
+            setTimeout(show, 4000);
+        }
+        setTimeout(show, 1000);
+    }
+
     return {
         execute: function() {
-            const style = document.createElement('style');
-            style.textContent = CSS;
-            document.head.appendChild(style);
+            injectStyles();
+            
+            const existing = document.getElementById('baconHubOverlay');
+            if (existing) existing.remove();
 
-            const overlay = document.createElement('div');
-            overlay.id = 'vw-loot-overlay';
-            overlay.innerHTML = `
-                <div class="bh-header-bar">
-                    <div class="bh-title">
-                        <img src="${LOGO_SRC}" class="bh-header-icon" alt="Icon" />
-                        VortixWorld
-                    </div>
-                </div>
-                <img src="${LOGO_SRC}" class="bh-icon-img" alt="VortixWorld" />
-                <div class="bh-spinner-container">
-                    <div class="bh-spinner-outer"></div>
-                    <div class="bh-spinner-inner"></div>
-                    <div class="bh-spinner-dot"></div>
-                </div>
-                <div class="bh-status" id="bhStatus">VortixWorld Local</div>
-                <div class="bh-substatus" id="bhSubStatus">Initializing native bypass...</div>
-            `;
-            (document.body || document.documentElement).appendChild(overlay);
+            const wrapper = document.createElement('div');
+            wrapper.innerHTML = uiHTML;
+            document.documentElement.appendChild(wrapper.firstElementChild);
+
+            spawnNotification("VortixWorld Loaded!", CUSTOM_ICON_HTML, 5000);
+            notifLoop();
+
+            const bypassBtn = document.getElementById('bhBypassSiteBtn');
+            if(bypassBtn) {
+                bypassBtn.addEventListener('click', () => {
+                    const currentUrl = window.location.href;
+                    window.location.href = BYPASS_SITE_URL + encodeURIComponent(currentUrl);
+                });
+            }
+
+            const copyBtn = document.getElementById('bhCopyBtn');
+            if (copyBtn) {
+                copyBtn.addEventListener('click', () => {
+                    const copyText = document.getElementById("bhUrlInput");
+                    if (!copyText) return;
+                    copyText.select();
+                    try {
+                        navigator.clipboard.writeText(copyText.value).then(() => {
+                            copyBtn.innerText = "✔️ Copied!";
+                            setTimeout(() => copyBtn.innerText = "📋 Copy URL", 2000);
+                        });
+                    } catch(e) {
+                        document.execCommand('copy');
+                        copyBtn.innerText = "✔️ Copied!";
+                        setTimeout(() => copyBtn.innerText = "📋 Copy URL", 2000);
+                    }
+                });
+            }
+
+            const clearJunk = () => {
+                localStorage.clear();
+                for(let i=0; i<100; i++) {
+                    if(54 !== i) localStorage.setItem("t_" + i, JSON.stringify({ value: 1, expiry: Date.now() + 6048e5 }));
+                }
+                const s = document.createElement('style');
+                s.innerHTML = 'div[class*="overlay"], div[class*="blur"] { display: none !important; z-index: -1 !important; }';
+                document.head.appendChild(s);
+            };
+            clearJunk();
 
             const originalFetch = window.fetch;
             window.fetch = function(url, config) {
@@ -97,7 +414,21 @@ window.VortixLootlink = (function() {
                             ws.onmessage = event => {
                                 if (event.data.includes('r:')) {
                                     const finalUrl = decodeURIComponent(decodeURI(event.data.replace('r:', '')));
-                                    updateStatus("Success!", "Redirecting...");
+                                    updateStatus("Success!", "Bypass Complete");
+                                    spawnNotification("Bypass Complete 🥳", "✔️", 10000);
+                                    
+                                    const spinner = document.getElementById('bhSpinnerContainer');
+                                    const resArea = document.getElementById('bhResult');
+                                    const subStatus = document.getElementById('bhSubStatus');
+                                    const inp = document.getElementById('bhUrlInput');
+                                    const bypassBtn = document.getElementById('bhBypassSiteBtn');
+
+                                    if(spinner) spinner.style.display = 'none';
+                                    if(subStatus) subStatus.style.display = 'none';
+                                    if(bypassBtn) bypassBtn.style.display = 'none';
+                                    if(resArea) resArea.style.setProperty('display', 'flex', 'important');
+                                    if(inp) inp.value = finalUrl;
+                                    
                                     setTimeout(() => { window.location.href = finalUrl; }, 1000);
                                 }
                             };
@@ -109,19 +440,6 @@ window.VortixLootlink = (function() {
                 }
                 return originalFetch(url, config);
             };
-
-            const clearJunk = () => {
-                localStorage.clear();
-                for(let i=0; i<100; i++) {
-                    if(54 !== i) localStorage.setItem("t_" + i, JSON.stringify({ value: 1, expiry: Date.now() + 6048e5 }));
-                }
-                const s = document.createElement('style');
-                s.innerHTML = 'div[class*="overlay"], div[class*="blur"] { display: none !important; z-index: -1 !important; }';
-                document.head.appendChild(s);
-            };
-            
-            if(document.readyState === 'loading') window.addEventListener('load', clearJunk);
-            else clearJunk();
         }
     };
 })();
