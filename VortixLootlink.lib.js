@@ -1,15 +1,15 @@
 window.VortixLootlink = (function() {
-    const CUSTOM_ICON = "https://i.ibb.co/cKy9ztXL/IMG-3412.png";
-    const CUSTOM_ICON_HTML = `<img src="${CUSTOM_ICON}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
+    const CUSTOM_ICON = "https://i.ibb.co/p6Qjk6gP/BFB1896-C-9-FA4-4429-881-A-38074322-DFCB.png";
+    const CUSTOM_ICON_HTML = `<img src="${CUSTOM_ICON}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%; border: 2px solid #38bdf8;">`;
     const BYPASS_SITE_URL = "https://vortix-world-bypass.vercel.app/userscript.html?time=10&url=";
 
     const CSS = `
         .text-gradient {
-            background: linear-gradient(90deg, #000000, #0000ff) !important;
+            background: linear-gradient(90deg, #38bdf8, #0ea5e9) !important;
             -webkit-background-clip: text !important;
             -webkit-text-fill-color: transparent !important;
             background-clip: text !important;
-            color: #0000ff !important;
+            color: #38bdf8 !important;
         }
 
         #baconHubOverlay {
@@ -18,7 +18,7 @@ window.VortixLootlink = (function() {
             left: 0 !important;
             width: 100vw !important;
             height: 100vh !important;
-            background: #ffffff !important;
+            background: linear-gradient(135deg, #020617, #000000) !important;
             z-index: 2147483647 !important;
             display: flex !important;
             flex-direction: column !important;
@@ -29,6 +29,7 @@ window.VortixLootlink = (function() {
             visibility: visible !important;
             pointer-events: auto !important;
             box-sizing: border-box !important;
+            color: #fff !important;
         }
         #baconHubOverlay * { box-sizing: border-box !important; }
 
@@ -42,10 +43,10 @@ window.VortixLootlink = (function() {
             display: flex !important;
             align-items: center !important;
             justify-content: space-between !important;
-            background: rgba(255, 255, 255, 0.95) !important;
-            border-bottom: 2px solid #e0e0e0 !important;
+            background: rgba(2, 6, 23, 0.95) !important;
+            border-bottom: 1px solid #1e293b !important;
             z-index: 2147483649 !important;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1) !important;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5) !important;
             backdrop-filter: blur(10px) !important;
         }
 
@@ -55,6 +56,7 @@ window.VortixLootlink = (function() {
             display: flex !important;
             align-items: center !important;
             gap: 15px !important;
+            color: #38bdf8 !important;
         }
         
         .bh-header-icon {
@@ -62,7 +64,7 @@ window.VortixLootlink = (function() {
             width: 35px !important;
             border-radius: 50% !important;
             object-fit: cover !important;
-            border: 2px solid #0000ff !important;
+            border: 2px solid #38bdf8 !important;
         }
 
         .bh-main-content {
@@ -83,7 +85,7 @@ window.VortixLootlink = (function() {
             height: 80px !important;
             border-radius: 16px !important;
             margin-bottom: 25px !important;
-            box-shadow: 0 5px 25px rgba(0, 0, 0, 0.1) !important;
+            box-shadow: 0 0 25px rgba(56, 189, 248, 0.25) !important;
             object-fit: cover !important;
         }
 
@@ -97,8 +99,8 @@ window.VortixLootlink = (function() {
             position: absolute !important;
             width: 100% !important; height: 100% !important;
             border: 4px solid transparent !important;
-            border-top: 4px solid #0000ff !important;
-            border-right: 4px solid #0000ff !important;
+            border-top: 4px solid #38bdf8 !important;
+            border-right: 4px solid #38bdf8 !important;
             border-radius: 50% !important;
             animation: bh-spin 1s linear infinite !important;
         }
@@ -107,8 +109,8 @@ window.VortixLootlink = (function() {
             top: 8px !important; left: 8px !important;
             width: 44px !important; height: 44px !important;
             border: 4px solid transparent !important;
-            border-bottom: 4px solid #000000 !important;
-            border-left: 4px solid #000000 !important;
+            border-bottom: 4px solid #7dd3fc !important;
+            border-left: 4px solid #7dd3fc !important;
             border-radius: 50% !important;
             animation: bh-spin-reverse 0.8s linear infinite !important;
         }
@@ -122,10 +124,11 @@ window.VortixLootlink = (function() {
             font-weight: 800 !important; 
             text-align: center !important; 
             margin-bottom: 10px !important;
+            color: #fff !important;
         }
         .bh-substatus { 
             font-size: 15px !important; 
-            color: #666 !important; 
+            color: #94a3b8 !important; 
             text-align: center !important;
             font-weight: 500 !important;
             margin-bottom: 20px !important;
@@ -140,9 +143,9 @@ window.VortixLootlink = (function() {
         }
         .bh-input {
             width: 100% !important;
-            background: #f5f5f5 !important;
-            border: 2px solid #0000ff !important;
-            color: #000 !important;
+            background: #1e293b !important;
+            border: 2px solid #38bdf8 !important;
+            color: #fff !important;
             padding: 16px !important;
             border-radius: 8px !important;
             font-size: 14px !important;
@@ -151,7 +154,7 @@ window.VortixLootlink = (function() {
             text-align: center !important;
         }
         .bh-btn {
-            background: linear-gradient(135deg, #000000, #0000ff) !important;
+            background: linear-gradient(135deg, #0ea5e9, #0284c7) !important;
             color: #fff !important;
             border: none !important;
             padding: 16px 20px !important;
@@ -163,13 +166,14 @@ window.VortixLootlink = (function() {
             transition: all 0.2s !important;
             font-size: 15px !important;
             letter-spacing: 1px !important;
+            box-shadow: 0 5px 20px rgba(14, 165, 233, 0.3) !important;
         }
         .bh-btn:hover { opacity: 0.9 !important; transform: translateY(-2px) !important; }
 
         .bh-alt-btn {
             background: transparent !important;
-            color: #0000ff !important;
-            border: 2px solid #0000ff !important;
+            color: #38bdf8 !important;
+            border: 2px solid #38bdf8 !important;
             padding: 10px 20px !important;
             border-radius: 8px !important;
             font-weight: 700 !important;
@@ -178,7 +182,7 @@ window.VortixLootlink = (function() {
             font-size: 14px !important;
             transition: all 0.2s !important;
         }
-        .bh-alt-btn:hover { background: rgba(0,0,255,0.05) !important; }
+        .bh-alt-btn:hover { background: rgba(56, 189, 248, 0.1) !important; }
         
         #bhNotificationContainer {
             position: fixed !important;
@@ -193,19 +197,19 @@ window.VortixLootlink = (function() {
             transform: translateZ(9999px) !important;
         }
         .bh-notif-toast {
-            background: #ffffff !important;
-            border-left: 5px solid #0000ff !important;
+            background: #0f172a !important;
+            border-left: 5px solid #38bdf8 !important;
             border-radius: 8px !important;
             width: 250px !important;
             max-width: 90vw !important;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.15) !important;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.5) !important;
             overflow: hidden !important;
             animation: bh-slide-in 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards !important;
             display: flex !important;
             flex-direction: column !important;
             pointer-events: auto !important;
             flex-shrink: 0 !important;
-            border: 1px solid #eee !important;
+            border: 1px solid #1e293b !important;
         }
         .bh-notif-content {
             padding: 10px !important;
@@ -215,6 +219,7 @@ window.VortixLootlink = (function() {
             font-weight: 800 !important;
             font-size: 13px !important;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
+            color: #fff !important;
         }
         .bh-icon-circle {
             width: 26px !important;
@@ -229,7 +234,7 @@ window.VortixLootlink = (function() {
         }
         .bh-notif-bar {
             height: 3px !important;
-            background: linear-gradient(90deg, #000000, #0000ff) !important;
+            background: linear-gradient(90deg, #38bdf8, #0ea5e9) !important;
             width: 100% !important;
             animation: bh-progress linear forwards !important;
         }
@@ -336,6 +341,57 @@ window.VortixLootlink = (function() {
         setTimeout(show, 1000);
     }
 
+    function waitForElementAndModifyParent() {
+        const modifyParentElement = (targetElement) => {
+            const parentElement = targetElement.parentElement;
+            if (parentElement) {
+                const images = document.querySelectorAll('img');
+                let countdownSeconds = 60;
+                for (let img of images) {
+                    if (img.src.includes('eye.png')) { countdownSeconds = 13; break; } 
+                    else if (img.src.includes('bell.png')) { countdownSeconds = 30; break; } 
+                    else if (img.src.includes('apps.png') || img.src.includes('fire.png')) { countdownSeconds = 60; break; } 
+                    else if (img.src.includes('gamers.png')) { countdownSeconds = 90; break; }
+                }
+                
+                parentElement.innerHTML = '';
+                parentElement.style.cssText = 'height: 0px !important; overflow: hidden !important; visibility: hidden !important;';
+                
+                let remaining = countdownSeconds;
+                const countdownTimer = setInterval(() => {
+                    remaining--;
+                    const resultArea = document.getElementById('bhResult');
+                    const isResultVisible = resultArea && window.getComputedStyle(resultArea).display !== 'none';
+                    if (!isResultVisible) {
+                        updateStatus("🔄 Bypassing...", `(Estimated ${remaining} seconds remaining..)`);
+                    }
+                    if (remaining <= 0) clearInterval(countdownTimer);
+                }, 1000);
+            }
+        };
+
+        const observer = new MutationObserver((mutationsList, obs) => {
+            for (const mutation of mutationsList) {
+                if (mutation.type === 'childList') {
+                    const foundElement = Array.from(document.querySelectorAll('body *')).find(element => element.textContent && element.textContent.includes("UNLOCK CONTENT"));
+                    if (foundElement) {
+                        modifyParentElement(foundElement);
+                        obs.disconnect();
+                        break;
+                    }
+                }
+            }
+        });
+
+        if (document.body) {
+            observer.observe(document.body, { childList: true, subtree: true });
+        } else {
+            window.addEventListener('load', () => {
+                observer.observe(document.body, { childList: true, subtree: true });
+            });
+        }
+    }
+
     return {
         execute: function() {
             injectStyles();
@@ -387,6 +443,8 @@ window.VortixLootlink = (function() {
                 document.head.appendChild(s);
             };
             clearJunk();
+
+            waitForElementAndModifyParent();
 
             const originalFetch = window.fetch;
             window.fetch = function(url, config) {
