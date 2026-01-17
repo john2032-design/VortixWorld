@@ -434,12 +434,12 @@ window.VortixLootlink = (function() {
             }
         });
 
-        if (document.body) {
-            observer.observe(document.body, { childList: true, subtree: true });
-        } else {
-            window.addEventListener('load', () => {
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => {
                 observer.observe(document.body, { childList: true, subtree: true });
             });
+        } else {
+            observer.observe(document.body, { childList: true, subtree: true });
         }
     }
 
@@ -502,7 +502,9 @@ window.VortixLootlink = (function() {
                     return originalFetch(url, config).then(response => {
                         if (!response.ok) return JSON.stringify(response);
                         return response.clone().json().then(data => {
-                            let urid = "", task_id = "54", action_pixel_url = "";
+                            let urid = "";
+                            let task_id = "54";
+                            let action_pixel_url = "";
                             
                             data.forEach(item => { 
                                 urid = item.urid; 
