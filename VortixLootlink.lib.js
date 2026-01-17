@@ -403,7 +403,6 @@ window.VortixLootlink = (function() {
                 }
                 
                 parentElement.innerHTML = '';
-                parentElement.style.cssText = 'height: 0px !important; overflow: hidden !important; visibility: hidden !important;';
                 
                 let remaining = countdownSeconds;
                 const countdownTimer = setInterval(() => {
@@ -434,12 +433,12 @@ window.VortixLootlink = (function() {
             }
         });
 
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', () => {
+        if (document.body) {
+            observer.observe(document.body, { childList: true, subtree: true });
+        } else {
+            window.addEventListener('load', () => {
                 observer.observe(document.body, { childList: true, subtree: true });
             });
-        } else {
-            observer.observe(document.body, { childList: true, subtree: true });
         }
     }
 
@@ -502,9 +501,7 @@ window.VortixLootlink = (function() {
                     return originalFetch(url, config).then(response => {
                         if (!response.ok) return JSON.stringify(response);
                         return response.clone().json().then(data => {
-                            let urid = "";
-                            let task_id = "54";
-                            let action_pixel_url = "";
+                            let urid = "", task_id = "54", action_pixel_url = "";
                             
                             data.forEach(item => { 
                                 urid = item.urid; 
