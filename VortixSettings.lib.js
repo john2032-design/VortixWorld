@@ -26,8 +26,8 @@ window.VortixSettings = (function() {
     `;
 
     function getMode() {
-        if (typeof GM_getValue !== 'undefined') return GM_getValue(STORAGE_KEY, 'remote');
-        return localStorage.getItem(STORAGE_KEY) || 'remote';
+        if (typeof GM_getValue !== 'undefined') return GM_getValue(STORAGE_KEY, 'local');
+        return localStorage.getItem(STORAGE_KEY) || 'local';
     }
 
     function setMode(mode) {
