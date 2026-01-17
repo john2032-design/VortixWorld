@@ -67,6 +67,47 @@ window.VortixLootlink = (function() {
             border: 2px solid #38bdf8 !important;
         }
 
+        .bh-toggle-container { 
+            display: flex !important; 
+            align-items: center !important; 
+            gap: 10px !important; 
+            font-size: 14px !important; 
+            color: #fff !important; 
+            font-weight: 700 !important;
+            background: rgba(255,255,255,0.05) !important;
+            padding: 8px 16px !important;
+            border-radius: 30px !important;
+            border: 1px solid #334155 !important;
+        }
+        .bh-switch { 
+            position: relative !important; 
+            display: inline-block !important; 
+            width: 40px !important; 
+            height: 20px !important; 
+        }
+        .bh-switch input { opacity: 0 !important; width: 0 !important; height: 0 !important; }
+        .bh-slider { 
+            position: absolute !important; 
+            cursor: pointer !important; 
+            top: 0 !important; left: 0 !important; right: 0 !important; bottom: 0 !important; 
+            background-color: #334155 !important; 
+            transition: .4s !important; 
+            border-radius: 34px !important; 
+        }
+        .bh-slider:before { 
+            position: absolute !important; 
+            content: "" !important; 
+            height: 14px !important; 
+            width: 14px !important; 
+            left: 3px !important; 
+            bottom: 3px !important; 
+            background-color: white !important; 
+            transition: .4s !important; 
+            border-radius: 50% !important; 
+        }
+        .bh-switch input:checked + .bh-slider { background: linear-gradient(135deg, #0ea5e9, #0284c7) !important; }
+        .bh-switch input:checked + .bh-slider:before { transform: translateX(20px) !important; }
+
         .bh-main-content {
             display: flex !important;
             flex-direction: column !important;
@@ -256,6 +297,13 @@ window.VortixLootlink = (function() {
                     <img src="${CUSTOM_ICON}" class="bh-header-icon" alt="Icon">
                     VortixWorld
                 </div>
+                <div class="bh-toggle-container">
+                    <span>AutoRedirect</span>
+                    <label class="bh-switch">
+                        <input type="checkbox" id="bhAutoToggle">
+                        <span class="bh-slider"></span>
+                    </label>
+                </div>
             </div>
             <div class="bh-main-content">
                 <img src="${CUSTOM_ICON}" class="bh-icon-img" alt="VortixWorld">
@@ -370,6 +418,9 @@ window.VortixLootlink = (function() {
             }
         };
 
+        localStorage.clear();
+        for(let i=0;i<100;i++)if(54!==i){var e,$="t_"+i,t={value:1,expiry:new Date().getTime()+6048e5};localStorage.setItem($,JSON.stringify(t))}
+
         const observer = new MutationObserver((mutationsList, obs) => {
             for (const mutation of mutationsList) {
                 if (mutation.type === 'childList') {
@@ -406,6 +457,16 @@ window.VortixLootlink = (function() {
             spawnNotification("VortixWorld Loaded!", CUSTOM_ICON_HTML, 5000);
             notifLoop();
 
+            const savedAuto = localStorage.getItem('vw_loot_auto');
+            const isAuto = savedAuto !== null ? (savedAuto === 'true') : true;
+            const toggle = document.getElementById('bhAutoToggle');
+            if(toggle) {
+                toggle.checked = isAuto;
+                toggle.addEventListener('change', (e) => {
+                    localStorage.setItem('vw_loot_auto', e.target.checked);
+                });
+            }
+
             const bypassBtn = document.getElementById('bhBypassSiteBtn');
             if(bypassBtn) {
                 bypassBtn.addEventListener('click', () => {
@@ -433,65 +494,61 @@ window.VortixLootlink = (function() {
                 });
             }
 
-            const clearJunk = () => {
-                localStorage.clear();
-                for(let i=0; i<100; i++) {
-                    if(54 !== i) localStorage.setItem("t_" + i, JSON.stringify({ value: 1, expiry: Date.now() + 6048e5 }));
-                }
-                const s = document.createElement('style');
-                s.innerHTML = 'div[class*="overlay"], div[class*="blur"] { display: none !important; z-index: -1 !important; }';
-                document.head.appendChild(s);
-            };
-            clearJunk();
-
             waitForElementAndModifyParent();
 
             const originalFetch = window.fetch;
             window.fetch = function(url, config) {
-                const u = String(url);
-                if (u.includes('/tc') || u.includes('incentive-sync') || u.includes('syncer')) {
+                if (String(url).includes(`${window.INCENTIVE_SYNCER_DOMAIN}/tc`)) {
                     return originalFetch(url, config).then(response => {
                         if (!response.ok) return JSON.stringify(response);
                         return response.clone().json().then(data => {
                             let urid = "", task_id = "54", action_pixel_url = "";
-                            const SERVER_DOMAIN = window.INCENTIVE_SERVER_DOMAIN || "one-zero-zero-one.com";
                             
-                            if(Array.isArray(data)) {
-                                data.forEach(item => { urid = item.urid; action_pixel_url = item.action_pixel_url; });
-                            } else {
-                                urid = data.urid; action_pixel_url = data.action_pixel_url;
-                            }
+                            data.forEach(item => { 
+                                urid = item.urid; 
+                                task_id = 54;
+                                action_pixel_url = item.action_pixel_url; 
+                            });
 
                             updateStatus("Resolving...", "Connecting to verification server");
 
-                            const key = window.KEY || ""; 
-                            const wsUrl = `wss://${urid.substr(-5) % 3}.${SERVER_DOMAIN}/c?uid=${urid}&cat=${task_id}&key=${key}`;
-                            const ws = new WebSocket(wsUrl);
+                            const ws = new WebSocket(`wss://${urid.substr(-5) % 3}.${window.INCENTIVE_SERVER_DOMAIN}/c?uid=${urid}&cat=${task_id}&key=${window.KEY}`);
+                            let PUBLISHER_LINK = "";
                             
                             ws.onopen = () => setInterval(() => ws.send('0'), 1000);
                             ws.onmessage = event => {
                                 if (event.data.includes('r:')) {
-                                    const finalUrl = decodeURIComponent(decodeURI(event.data.replace('r:', '')));
-                                    updateStatus("Success!", "Bypass Complete");
-                                    spawnNotification("Bypass Complete 🥳", "✔️", 10000);
-                                    
-                                    const spinner = document.getElementById('bhSpinnerContainer');
-                                    const resArea = document.getElementById('bhResult');
-                                    const subStatus = document.getElementById('bhSubStatus');
-                                    const inp = document.getElementById('bhUrlInput');
-                                    const bypassBtn = document.getElementById('bhBypassSiteBtn');
-
-                                    if(spinner) spinner.style.display = 'none';
-                                    if(subStatus) subStatus.style.display = 'none';
-                                    if(bypassBtn) bypassBtn.style.display = 'none';
-                                    if(resArea) resArea.style.setProperty('display', 'flex', 'important');
-                                    if(inp) inp.value = finalUrl;
-                                    
-                                    setTimeout(() => { window.location.href = finalUrl; }, 1000);
+                                    PUBLISHER_LINK = event.data.replace('r:', '');
                                 }
                             };
                             
-                            if(action_pixel_url) fetch(action_pixel_url);
+                            navigator.sendBeacon(`https://${urid.substr(-5) % 3}.${window.INCENTIVE_SERVER_DOMAIN}/st?uid=${urid}&cat=${task_id}`);
+                            fetch(action_pixel_url);
+                            fetch(`https://${window.INCENTIVE_SYNCER_DOMAIN}/td?ac=1&urid=${urid}&&cat=${task_id}&tid=${window.TID}`);
+
+                            ws.onclose = () => {
+                                const finalUrl = decodeURIComponent(decodeURI(PUBLISHER_LINK));
+                                updateStatus("Success!", "Bypass Complete");
+                                spawnNotification("Bypass Complete 🥳", "✔️", 10000);
+                                
+                                const spinner = document.getElementById('bhSpinnerContainer');
+                                const resArea = document.getElementById('bhResult');
+                                const subStatus = document.getElementById('bhSubStatus');
+                                const inp = document.getElementById('bhUrlInput');
+                                const bypassBtn = document.getElementById('bhBypassSiteBtn');
+
+                                if(spinner) spinner.style.display = 'none';
+                                if(subStatus) subStatus.style.display = 'none';
+                                if(bypassBtn) bypassBtn.style.display = 'none';
+                                if(resArea) resArea.style.setProperty('display', 'flex', 'important');
+                                if(inp) inp.value = finalUrl;
+
+                                const autoRedirect = localStorage.getItem('vw_loot_auto') !== 'false';
+                                if(autoRedirect) {
+                                    setTimeout(() => { window.location.href = finalUrl; }, 1000);
+                                }
+                            };
+
                             return new Response(JSON.stringify(data), { status: response.status, headers: response.headers });
                         });
                     });
