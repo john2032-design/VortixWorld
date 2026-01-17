@@ -37,20 +37,31 @@ window.VortixSettings = (function() {
 
     return {
         init: function() {
-            if (document.getElementById('vw-settings-css')) return;
-            const style = document.createElement('style');
-            style.id = 'vw-settings-css';
-            style.textContent = CSS;
-            (document.head || document.documentElement).appendChild(style);
+            const inject = () => {
+                if (document.getElementById('vw-gear-btn')) return;
+                
+                if (!document.getElementById('vw-settings-css')) {
+                    const style = document.createElement('style');
+                    style.id = 'vw-settings-css';
+                    style.textContent = CSS;
+                    (document.head || document.documentElement).appendChild(style);
+                }
 
-            const btn = document.createElement('div');
-            btn.id = 'vw-gear-btn';
-            btn.innerHTML = ASSETS.gear;
-            btn.title = "VortixWorld Settings";
-            btn.onclick = this.open;
-            document.body.appendChild(btn);
+                const btn = document.createElement('div');
+                btn.id = 'vw-gear-btn';
+                btn.innerHTML = ASSETS.gear;
+                btn.title = "VortixWorld Settings";
+                btn.onclick = this.open;
+                document.body.appendChild(btn);
 
-            this.buildModal();
+                this.buildModal();
+            };
+
+            if (document.body) {
+                inject();
+            } else {
+                window.addEventListener('DOMContentLoaded', inject);
+            }
         },
 
         buildModal: function() {
