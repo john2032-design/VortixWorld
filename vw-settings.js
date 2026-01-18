@@ -29,6 +29,7 @@
       cursor: pointer;
       user-select: none;
       transition: transform 0.2s, box-shadow 0.2s;
+      pointer-events: auto;
     }
     
     .vw-gear-btn:hover {
@@ -50,6 +51,7 @@
       align-items: center;
       justify-content: center;
       backdrop-filter: blur(8px);
+      pointer-events: auto;
     }
     
     .vw-backdrop.open {
@@ -67,6 +69,7 @@
       font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
       overflow: hidden;
       animation: vw-slide-in 0.3s ease-out;
+      pointer-events: auto;
     }
     
     @keyframes vw-slide-in {
@@ -285,6 +288,7 @@
       box-shadow: 0 8px 32px rgba(0,0,0,0.5);
       animation: vw-toast-in 0.3s ease-out;
       z-index: 2147483647;
+      pointer-events: none;
     }
     
     @keyframes vw-toast-in {
@@ -305,7 +309,7 @@
 
     const host = document.createElement('div');
     host.id = VW_SETTINGS_ID;
-    host.style.cssText = 'position:fixed;top:0;left:0;width:0;height:0;z-index:2147483647;pointer-events:none;';
+    host.style.cssText = 'all: initial; position: fixed !important; top: 0 !important; left: 0 !important; width: 0 !important; height: 0 !important; z-index: 2147483647 !important; pointer-events: none !important;';
     
     const shadow = host.attachShadow({ mode: 'closed' });
 
@@ -328,12 +332,10 @@
     const gearBtn = document.createElement('div');
     gearBtn.className = 'vw-gear-btn';
     gearBtn.textContent = '⚙️';
-    gearBtn.style.pointerEvents = 'auto';
     shadow.appendChild(gearBtn);
 
     const backdrop = document.createElement('div');
     backdrop.className = 'vw-backdrop';
-    backdrop.style.pointerEvents = 'auto';
     backdrop.innerHTML = `
       <div class="vw-panel">
         <div class="vw-header">
@@ -459,7 +461,11 @@
       location.reload();
     });
 
-    document.documentElement.appendChild(host);
+    if (document.body) {
+      document.body.appendChild(host);
+    } else {
+      document.documentElement.appendChild(host);
+    }
   }
 
   function init() {
