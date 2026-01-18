@@ -1,174 +1,497 @@
 (function() {
   'use strict';
 
-  function initVWSettings() {
-    if (!window.VW_CONFIG) {
-      console.warn('[VW Settings] VW_CONFIG not found, retrying...');
-      setTimeout(initVWSettings, 100);
-      return;
+  const VW_SETTINGS_ID = 'vw-settings-shadow-host';
+
+  const SETTINGS_CSS = `
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    .vw-gear-btn {
+      position: fixed;
+      bottom: 14px;
+      left: 14px;
+      z-index: 2147483647;
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.18);
+      background: linear-gradient(135deg, #000000, #071033, #1e2be8);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+      color: #cfd6e6;
+      font-size: 22px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      user-select: none;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    
+    .vw-gear-btn:hover {
+      transform: translateY(-2px) scale(1.05);
+      box-shadow: 0 12px 40px rgba(30, 43, 232, 0.4);
+    }
+    
+    .vw-backdrop {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0, 0, 0, 0.85);
+      z-index: 2147483647;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      backdrop-filter: blur(8px);
+    }
+    
+    .vw-backdrop.open {
+      display: flex;
+    }
+    
+    .vw-panel {
+      width: 90%;
+      max-width: 480px;
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,0.14);
+      background: linear-gradient(135deg, #000000 0%, #071033 60%, #1e2be8 100%);
+      box-shadow: 0 30px 100px rgba(0,0,0,0.8);
+      color: #cfd6e6;
+      font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+      overflow: hidden;
+      animation: vw-slide-in 0.3s ease-out;
+    }
+    
+    @keyframes vw-slide-in {
+      from {
+        opacity: 0;
+        transform: translateY(-20px) scale(0.95);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+    
+    .vw-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 20px;
+      border-bottom: 1px solid rgba(255,255,255,0.12);
+      background: rgba(255,255,255,0.04);
+    }
+    
+    .vw-title {
+      font-weight: 900;
+      font-size: 18px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: #7aa2ff;
+    }
+    
+    .vw-badge {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      border: 1px solid rgba(255,255,255,0.14);
+      background: rgba(255,255,255,0.06);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 950;
+      font-size: 12px;
+      color: #cfd6e6;
+    }
+    
+    .vw-close-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      border: 1px solid rgba(255,255,255,0.16);
+      background: rgba(0,0,0,0.18);
+      color: #cfd6e6;
+      cursor: pointer;
+      font-size: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s;
+    }
+    
+    .vw-close-btn:hover {
+      background: rgba(255,255,255,0.1);
+    }
+    
+    .vw-body {
+      padding: 16px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    
+    .vw-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 14px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(255,255,255,0.05);
+    }
+    
+    .vw-label {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      flex: 1;
+    }
+    
+    .vw-label-title {
+      font-size: 14px;
+      font-weight: 900;
+      color: #7aa2ff;
+    }
+    
+    .vw-label-desc {
+      font-size: 12px;
+      color: rgba(207,214,230,0.75);
+      font-weight: 600;
+    }
+    
+    .vw-switch {
+      position: relative;
+      width: 52px;
+      height: 28px;
+      flex-shrink: 0;
+    }
+    
+    .vw-switch input {
+      opacity: 0;
+      width: 100%;
+      height: 100%;
+      position: absolute;
+      top: 0;
+      left: 0;
+      cursor: pointer;
+      z-index: 1;
+      margin: 0;
+    }
+    
+    .vw-switch-slider {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.18);
+      transition: 0.3s;
+      pointer-events: none;
+    }
+    
+    .vw-switch-slider:before {
+      content: "";
+      position: absolute;
+      top: 4px;
+      left: 4px;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: #cfd6e6;
+      transition: 0.3s;
+    }
+    
+    .vw-switch input:checked + .vw-switch-slider {
+      background: linear-gradient(90deg, #0f1b4f, #1e2be8);
+    }
+    
+    .vw-switch input:checked + .vw-switch-slider:before {
+      transform: translateX(24px);
+    }
+    
+    .vw-input {
+      width: 80px;
+      background: rgba(0,0,0,0.25);
+      border: 1px solid rgba(255,255,255,0.15);
+      color: #fff;
+      border-radius: 8px;
+      padding: 8px 10px;
+      text-align: center;
+      font-weight: 700;
+      font-size: 14px;
+      outline: none;
+      flex-shrink: 0;
+    }
+    
+    .vw-input:focus {
+      border-color: #1e2be8;
+      box-shadow: 0 0 0 2px rgba(30, 43, 232, 0.3);
+    }
+    
+    .vw-actions {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 10px;
+      padding-top: 6px;
+    }
+    
+    .vw-btn {
+      padding: 10px 16px;
+      border-radius: 10px;
+      border: 1px solid rgba(255,255,255,0.16);
+      background: rgba(0,0,0,0.18);
+      color: #cfd6e6;
+      font-weight: 800;
+      font-size: 13px;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.2s;
+    }
+    
+    .vw-btn:hover {
+      background: rgba(255,255,255,0.08);
+      transform: translateY(-1px);
+    }
+    
+    .vw-btn-primary {
+      background: linear-gradient(90deg, #0f1b4f, #1e2be8);
+      border: 1px solid rgba(255,255,255,0.14);
+    }
+    
+    .vw-btn-primary:hover {
+      background: linear-gradient(90deg, #1a2a6c, #2a3bf8);
+    }
+    
+    .vw-toast {
+      position: fixed;
+      bottom: 70px;
+      left: 14px;
+      padding: 10px 16px;
+      border-radius: 10px;
+      background: linear-gradient(90deg, #0f1b4f, #1e2be8);
+      color: #cfd6e6;
+      font-weight: 700;
+      font-size: 13px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+      animation: vw-toast-in 0.3s ease-out;
+      z-index: 2147483647;
+    }
+    
+    @keyframes vw-toast-in {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+  `;
+
+  function createSettingsUI() {
+    const existing = document.getElementById(VW_SETTINGS_ID);
+    if (existing) existing.remove();
+
+    const host = document.createElement('div');
+    host.id = VW_SETTINGS_ID;
+    host.style.cssText = 'position:fixed;top:0;left:0;width:0;height:0;z-index:2147483647;pointer-events:none;';
+    
+    const shadow = host.attachShadow({ mode: 'closed' });
+
+    const keys = {
+      lootlinkLocal: 'vw_lootlink_local',
+      redirectWaitTime: 'vw_redirect_wait_time'
+    };
+
+    let lootlinkLocal = localStorage.getItem(keys.lootlinkLocal);
+    lootlinkLocal = lootlinkLocal !== null ? lootlinkLocal === 'true' : true;
+
+    let redirectWaitTime = localStorage.getItem(keys.redirectWaitTime);
+    redirectWaitTime = redirectWaitTime !== null ? parseInt(redirectWaitTime, 10) : 5;
+    if (isNaN(redirectWaitTime)) redirectWaitTime = 5;
+
+    const style = document.createElement('style');
+    style.textContent = SETTINGS_CSS;
+    shadow.appendChild(style);
+
+    const gearBtn = document.createElement('div');
+    gearBtn.className = 'vw-gear-btn';
+    gearBtn.textContent = '⚙️';
+    gearBtn.style.pointerEvents = 'auto';
+    shadow.appendChild(gearBtn);
+
+    const backdrop = document.createElement('div');
+    backdrop.className = 'vw-backdrop';
+    backdrop.style.pointerEvents = 'auto';
+    backdrop.innerHTML = `
+      <div class="vw-panel">
+        <div class="vw-header">
+          <div class="vw-title">
+            <div class="vw-badge">VW</div>
+            <span>Settings</span>
+          </div>
+          <button class="vw-close-btn" type="button">✕</button>
+        </div>
+        <div class="vw-body">
+          <div class="vw-row">
+            <div class="vw-label">
+              <div class="vw-label-title">LootlinkLocal</div>
+              <div class="vw-label-desc">Enable local bypass on Loot* domains</div>
+            </div>
+            <label class="vw-switch">
+              <input type="checkbox" id="vwLootlinkToggle" ${lootlinkLocal ? 'checked' : ''}>
+              <span class="vw-switch-slider"></span>
+            </label>
+          </div>
+          <div class="vw-row">
+            <div class="vw-label">
+              <div class="vw-label-title">Redirect Wait Time</div>
+              <div class="vw-label-desc">Seconds before auto-redirect (0-60)</div>
+            </div>
+            <input type="number" class="vw-input" id="vwWaitTimeInput" min="0" max="60" value="${redirectWaitTime}">
+          </div>
+          <div class="vw-actions">
+            <button class="vw-btn" id="vwReloadBtn" type="button">Reload Page</button>
+            <button class="vw-btn vw-btn-primary" id="vwApplyBtn" type="button">Apply & Save</button>
+          </div>
+        </div>
+      </div>
+    `;
+    shadow.appendChild(backdrop);
+
+    const closeBtn = shadow.querySelector('.vw-close-btn');
+    const panel = shadow.querySelector('.vw-panel');
+    const lootlinkToggle = shadow.querySelector('#vwLootlinkToggle');
+    const waitTimeInput = shadow.querySelector('#vwWaitTimeInput');
+    const applyBtn = shadow.querySelector('#vwApplyBtn');
+    const reloadBtn = shadow.querySelector('#vwReloadBtn');
+
+    function showToast(message) {
+      const existingToast = shadow.querySelector('.vw-toast');
+      if (existingToast) existingToast.remove();
+      
+      const toast = document.createElement('div');
+      toast.className = 'vw-toast';
+      toast.textContent = message;
+      shadow.appendChild(toast);
+      
+      setTimeout(() => toast.remove(), 2500);
     }
 
-    const VW_KEYS = window.VW_CONFIG.keys;
-
-    function ensureGlobalSettingsUI() {
-      // Only return if BOTH elements already exist
-      if (document.getElementById('vwGlobalGearBtn') && document.getElementById('vwGlobalSettingsBackdrop')) return;
-
-      const styles = document.createElement('style');
-      styles.id = 'vwGlobalGearStyles';
-      styles.textContent = `
-#vwGlobalGearBtn{position:fixed!important;bottom:14px!important;left:14px!important;z-index:2147483647!important;width:44px!important;height:44px!important;border-radius:12px!important;border:1px solid rgba(255,255,255,0.18)!important;background:linear-gradient(135deg,#000000,#071033,#1e2be8)!important;box-shadow:0 18px 60px rgba(0,0,0,0.55)!important;color:#cfd6e6!important;font:900 18px/1 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif!important;display:flex!important;align-items:center!important;justify-content:center!important;cursor:pointer!important;user-select:none!important;pointer-events:auto!important;opacity:1!important;visibility:visible!important}
-#vwGlobalGearBtn:hover{opacity:0.92!important;transform:translateY(-1px)!important}
-#vwGlobalSettingsBackdrop{position:fixed!important;inset:0!important;background:rgba(0,0,0,0.85)!important;z-index:2147483647!important;display:none!important;align-items:center!important;justify-content:center!important;backdrop-filter:blur(4px)!important;pointer-events:auto!important;opacity:1!important;visibility:visible!important}
-#vwGlobalSettingsPanel{width:min(560px,92vw)!important;border-radius:14px!important;border:1px solid rgba(255,255,255,0.14)!important;background:linear-gradient(135deg,#000000 0%,#071033 60%,#1e2be8 100%)!important;box-shadow:0 26px 90px rgba(0,0,0,0.8)!important;color:#cfd6e6!important;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif!important;overflow:hidden!important;position:relative!important;z-index:2147483648!important;opacity:1!important;visibility:visible!important;pointer-events:auto!important}
-.vwGHead{display:flex!important;align-items:center!important;justify-content:space-between!important;padding:14px 16px!important;border-bottom:1px solid rgba(255,255,255,0.12)!important;background:rgba(255,255,255,0.04)!important}
-.vwGTitle{font-weight:950!important;letter-spacing:0.2px!important;display:flex!important;align-items:center!important;gap:10px!important;color:#7aa2ff!important}
-.vwGBadge{width:34px!important;height:34px!important;border-radius:12px!important;border:1px solid rgba(255,255,255,0.14)!important;background:rgba(255,255,255,0.06)!important;display:flex!important;align-items:center!important;justify-content:center!important;font-weight:950!important;color:#cfd6e6!important}
-.vwGClose{width:36px!important;height:36px!important;border-radius:10px!important;border:1px solid rgba(255,255,255,0.16)!important;background:rgba(0,0,0,0.18)!important;color:#cfd6e6!important;cursor:pointer!important;font-weight:950!important;border:none!important;font-size:18px!important}
-.vwGBody{padding:14px 16px!important;display:flex!important;flex-direction:column!important;gap:12px!important}
-.vwGRow{display:flex!important;align-items:center!important;justify-content:space-between!important;gap:12px!important;padding:12px!important;border-radius:12px!important;border:1px solid rgba(255,255,255,0.12)!important;background:rgba(255,255,255,0.05)!important}
-.vwGLabel{display:flex!important;flex-direction:column!important;gap:4px!important;color:#cfd6e6!important}
-.vwGLabel b{font-size:14px!important;font-weight:950!important;color:#7aa2ff!important}
-.vwGLabel span{font-size:12px!important;color:rgba(207,214,230,0.80)!important;font-weight:700!important}
-.vwGSwitch{position:relative!important;width:54px!important;height:28px!important}
-.vwGSwitch input{opacity:0!important;width:100%!important;height:100%!important;margin:0!important;position:absolute!important;inset:0!important;cursor:pointer!important;z-index:2147483649!important}
-.vwGSlider{position:absolute!important;inset:0!important;border-radius:999px!important;background:rgba(255,255,255,0.18)!important;transition:0.25s!important;pointer-events:none!important}
-.vwGSlider:before{content: "" !important;position:absolute!important;top:4px!important;left:4px!important;width:20px!important;height:20px!important;border-radius:50%!important;background:#cfd6e6!important;transition:0.25s!important}
-.vwGSwitch input:checked + .vwGSlider{background:linear-gradient(90deg,#0f1b4f,#1e2be8)!important}
-.vwGSwitch input:checked + .vwGSlider:before{transform:translateX(26px)!important}
-.vwGActionRow{display:flex!important;align-items:center!important;justify-content:flex-end!important;gap:10px!important}
-.vwGBtn{padding:10px 12px!important;border-radius:12px!important;border:1px solid rgba(255,255,255,0.16)!important;background:rgba(0,0,0,0.18)!important;color:#cfd6e6!important;font-weight:950!important;cursor:pointer!important;font-size:14px!important}
-.vwGBtn2{padding:10px 12px!important;border-radius:12px!important;border:1px solid rgba(255,255,255,0.14)!important;background:linear-gradient(90deg,#0f1b4f,#1e2be8)!important;color:#cfd6e6!important;font-weight:950!important;cursor:pointer!important;font-size:14px!important}
-.vwGInput{width:70px!important;background:rgba(0,0,0,0.2)!important;border:1px solid rgba(255,255,255,0.15)!important;color:#fff!important;border-radius:8px!important;padding:6px!important;text-align:center!important;font-weight:700!important;outline:none!important}
-      `;
-      // append to head if possible, fallback to documentElement
-      const head = document.head || document.documentElement;
-      head.appendChild(styles);
-
-      // create gear button
-      const gear = document.createElement('div');
-      gear.id = 'vwGlobalGearBtn';
-      gear.textContent = '⚙️';
-      document.body.appendChild(gear);
-
-      // create backdrop + panel
-      const backdrop = document.createElement('div');
-      backdrop.id = 'vwGlobalSettingsBackdrop';
-      backdrop.innerHTML = `
-<div id="vwGlobalSettingsPanel" role="dialog" aria-modal="true">
-  <div class="vwGHead">
-    <div class="vwGTitle"><div class="vwGBadge">VW</div><div>Settings</div></div>
-    <button class="vwGClose" id="vwGlobalSettingsClose" type="button">✕</button>
-  </div>
-  <div class="vwGBody">
-    <div class="vwGRow">
-      <div class="vwGLabel">
-        <b>LootlinkLocal</b>
-        <span>true = use Lootlinks local bypass on Loot* domains</span>
-      </div>
-      <label class="vwGSwitch">
-        <input id="vwGlobalLootlinkLocalToggle" type="checkbox">
-        <span class="vwGSlider"></span>
-      </label>
-    </div>
-    <div class="vwGRow">
-      <div class="vwGLabel">
-        <b>Change Redirect waitTime</b>
-        <span>Seconds to wait before redirecting (e.g. 5)</span>
-      </div>
-      <input id="vwGlobalWaitTimeInput" class="vwGInput" type="number" min="0" max="60" value="${window.VW_CONFIG.redirectWaitTime}">
-    </div>
-    <div class="vwGActionRow">
-      <button class="vwGBtn" id="vwGlobalSettingsReload" type="button">Reload</button>
-      <button class="vwGBtn2" id="vwGlobalSettingsApply" type="button">Apply</button>
-    </div>
-  </div>
-</div>
-      `;
-      document.body.appendChild(backdrop);
-
-      // helper show/hide that force-applies important
-      function showBackdrop() {
-        backdrop.style.setProperty('display', 'flex', 'important');
-      }
-      function hideBackdrop() {
-        backdrop.style.setProperty('display', 'none', 'important');
-      }
-
-      function open() {
-        const t = document.getElementById('vwGlobalLootlinkLocalToggle');
-        const w = document.getElementById('vwGlobalWaitTimeInput');
-        if (t) t.checked = !!window.VW_CONFIG.lootlinkLocal;
-        if (w) w.value = window.VW_CONFIG.redirectWaitTime;
-        showBackdrop();
-      }
-
-      function close() {
-        hideBackdrop();
-      }
-
-      gear.addEventListener('click', (e) => {
-        e.stopPropagation();
-        open();
-      });
-
-      backdrop.addEventListener('click', (e) => {
-        if (e.target === backdrop) close();
-      });
-
-      const closeBtn = document.getElementById('vwGlobalSettingsClose');
-      if (closeBtn) closeBtn.addEventListener('click', close);
-
-      const applyBtn = document.getElementById('vwGlobalSettingsApply');
-      if (applyBtn) {
-        applyBtn.addEventListener('click', () => {
-          const t = document.getElementById('vwGlobalLootlinkLocalToggle');
-          const w = document.getElementById('vwGlobalWaitTimeInput');
-          if (t) {
-            window.VW_CONFIG.lootlinkLocal = !!t.checked;
-            localStorage.setItem(VW_KEYS.lootlinkLocal, String(window.VW_CONFIG.lootlinkLocal));
-          }
-          if (w) {
-            const val = parseInt(w.value, 10);
-            if (!isNaN(val) && val >= 0) {
-              window.VW_CONFIG.redirectWaitTime = val;
-              localStorage.setItem(VW_KEYS.redirectWaitTime, String(val));
-            }
-          }
-          close();
-        });
-      }
-
-      const reloadBtn = document.getElementById('vwGlobalSettingsReload');
-      if (reloadBtn) reloadBtn.addEventListener('click', () => location.reload());
+    function openPanel() {
+      let currentLootlink = localStorage.getItem(keys.lootlinkLocal);
+      currentLootlink = currentLootlink !== null ? currentLootlink === 'true' : true;
+      
+      let currentWaitTime = localStorage.getItem(keys.redirectWaitTime);
+      currentWaitTime = currentWaitTime !== null ? parseInt(currentWaitTime, 10) : 5;
+      if (isNaN(currentWaitTime)) currentWaitTime = 5;
+      
+      lootlinkToggle.checked = currentLootlink;
+      waitTimeInput.value = currentWaitTime;
+      
+      backdrop.classList.add('open');
     }
 
-    function bootGlobalSettingsUI() {
-      if (document.body) {
-        ensureGlobalSettingsUI();
-      } else {
-        const observer = new MutationObserver(() => {
-          if (document.body) {
-            ensureGlobalSettingsUI();
-            observer.disconnect();
-          }
-        });
-        observer.observe(document.documentElement, { childList: true, subtree: true });
-      }
+    function closePanel() {
+      backdrop.classList.remove('open');
+    }
 
-      const gearWatch = setInterval(() => {
-        if (document.body && (!document.getElementById('vwGlobalGearBtn') || !document.getElementById('vwGlobalSettingsBackdrop'))) {
-          ensureGlobalSettingsUI();
+    gearBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      openPanel();
+    });
+
+    closeBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      closePanel();
+    });
+
+    backdrop.addEventListener('click', (e) => {
+      if (e.target === backdrop) {
+        closePanel();
+      }
+    });
+
+    panel.addEventListener('click', (e) => {
+      e.stopPropagation();
+    });
+
+    applyBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      
+      const newLootlink = lootlinkToggle.checked;
+      const newWaitTime = parseInt(waitTimeInput.value, 10);
+      
+      localStorage.setItem(keys.lootlinkLocal, String(newLootlink));
+      
+      if (!isNaN(newWaitTime) && newWaitTime >= 0 && newWaitTime <= 60) {
+        localStorage.setItem(keys.redirectWaitTime, String(newWaitTime));
+      }
+      
+      if (window.VW_CONFIG) {
+        window.VW_CONFIG.lootlinkLocal = newLootlink;
+        if (!isNaN(newWaitTime) && newWaitTime >= 0) {
+          window.VW_CONFIG.redirectWaitTime = newWaitTime;
         }
-      }, 1000);
-    }
+      }
+      
+      showToast('✓ Settings saved!');
+      closePanel();
+    });
 
-    bootGlobalSettingsUI();
+    reloadBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      location.reload();
+    });
+
+    document.documentElement.appendChild(host);
+  }
+
+  function init() {
+    createSettingsUI();
+    
+    const observer = new MutationObserver(() => {
+      if (!document.getElementById(VW_SETTINGS_ID)) {
+        createSettingsUI();
+      }
+    });
+    
+    observer.observe(document.documentElement, { 
+      childList: true, 
+      subtree: false 
+    });
+    
+    setInterval(() => {
+      if (!document.getElementById(VW_SETTINGS_ID)) {
+        createSettingsUI();
+      }
+    }, 2000);
   }
 
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initVWSettings);
+    document.addEventListener('DOMContentLoaded', init);
   } else {
-    initVWSettings();
+    init();
   }
+  
+  window.addEventListener('load', () => {
+    if (!document.getElementById(VW_SETTINGS_ID)) {
+      init();
+    }
+  });
 })();
