@@ -11,7 +11,8 @@
     const VW_KEYS = window.VW_CONFIG.keys;
 
     function ensureGlobalSettingsUI() {
-      if (document.getElementById('vwGlobalGearBtn')) return;
+      // Only return if BOTH elements already exist
+      if (document.getElementById('vwGlobalGearBtn') && document.getElementById('vwGlobalSettingsBackdrop')) return;
 
       const styles = document.createElement('style');
       styles.id = 'vwGlobalGearStyles';
@@ -32,7 +33,7 @@
 .vwGSwitch{position:relative!important;width:54px!important;height:28px!important}
 .vwGSwitch input{opacity:0!important;width:100%!important;height:100%!important;margin:0!important;position:absolute!important;inset:0!important;cursor:pointer!important;z-index:2147483649!important}
 .vwGSlider{position:absolute!important;inset:0!important;border-radius:999px!important;background:rgba(255,255,255,0.18)!important;transition:0.25s!important;pointer-events:none!important}
-.vwGSlider:before{content:""!important;position:absolute!important;top:4px!important;left:4px!important;width:20px!important;height:20px!important;border-radius:50%!important;background:#cfd6e6!important;transition:0.25s!important}
+.vwGSlider:before{content: "" !important;position:absolute!important;top:4px!important;left:4px!important;width:20px!important;height:20px!important;border-radius:50%!important;background:#cfd6e6!important;transition:0.25s!important}
 .vwGSwitch input:checked + .vwGSlider{background:linear-gradient(90deg,#0f1b4f,#1e2be8)!important}
 .vwGSwitch input:checked + .vwGSlider:before{transform:translateX(26px)!important}
 .vwGActionRow{display:flex!important;align-items:center!important;justify-content:flex-end!important;gap:10px!important}
@@ -40,13 +41,17 @@
 .vwGBtn2{padding:10px 12px!important;border-radius:12px!important;border:1px solid rgba(255,255,255,0.14)!important;background:linear-gradient(90deg,#0f1b4f,#1e2be8)!important;color:#cfd6e6!important;font-weight:950!important;cursor:pointer!important;font-size:14px!important}
 .vwGInput{width:70px!important;background:rgba(0,0,0,0.2)!important;border:1px solid rgba(255,255,255,0.15)!important;color:#fff!important;border-radius:8px!important;padding:6px!important;text-align:center!important;font-weight:700!important;outline:none!important}
       `;
-      document.documentElement.appendChild(styles);
+      // append to head if possible, fallback to documentElement
+      const head = document.head || document.documentElement;
+      head.appendChild(styles);
 
+      // create gear button
       const gear = document.createElement('div');
       gear.id = 'vwGlobalGearBtn';
       gear.textContent = '⚙️';
       document.body.appendChild(gear);
 
+      // create backdrop + panel
       const backdrop = document.createElement('div');
       backdrop.id = 'vwGlobalSettingsBackdrop';
       backdrop.innerHTML = `
@@ -82,16 +87,24 @@
       `;
       document.body.appendChild(backdrop);
 
+      // helper show/hide that force-applies important
+      function showBackdrop() {
+        backdrop.style.setProperty('display', 'flex', 'important');
+      }
+      function hideBackdrop() {
+        backdrop.style.setProperty('display', 'none', 'important');
+      }
+
       function open() {
         const t = document.getElementById('vwGlobalLootlinkLocalToggle');
         const w = document.getElementById('vwGlobalWaitTimeInput');
         if (t) t.checked = !!window.VW_CONFIG.lootlinkLocal;
         if (w) w.value = window.VW_CONFIG.redirectWaitTime;
-        backdrop.style.display = 'flex';
+        showBackdrop();
       }
 
       function close() {
-        backdrop.style.display = 'none';
+        hideBackdrop();
       }
 
       gear.addEventListener('click', (e) => {
