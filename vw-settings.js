@@ -319,6 +319,44 @@
     }
   `;
 
+  const keys = {
+    lootlinkLocal: 'vw_lootlink_local',
+    redirectWaitTime: 'vw_redirect_wait_time'
+  };
+
+  function getStoredValue(key, defaultValue) {
+    if (typeof GM_getValue !== 'undefined') {
+      const gmValue = GM_getValue(key);
+      if (gmValue !== undefined) return gmValue;
+    }
+    
+    const lsValue = localStorage.getItem(key);
+    if (lsValue !== null) {
+      if (key === keys.lootlinkLocal) return lsValue === 'true';
+      if (key === keys.redirectWaitTime) {
+        const parsed = parseInt(lsValue, 10);
+        return isNaN(parsed) ? defaultValue : parsed;
+      }
+      return lsValue;
+    }
+    
+    return defaultValue;
+  }
+
+  function setStoredValue(key, value) {
+    if (typeof GM_setValue !== 'undefined') {
+      GM_setValue(key, value);
+    }
+    
+    if (key === keys.lootlinkLocal) {
+      localStorage.setItem(key, String(value));
+    } else if (key === keys.redirectWaitTime) {
+      localStorage.setItem(key, String(value));
+    } else {
+      localStorage.setItem(key, value);
+    }
+  }
+
   function createSettingsUI() {
     const existing = document.getElementById(VW_SETTINGS_ID);
     if (existing) existing.remove();
@@ -329,22 +367,17 @@
 
     const shadow = host.attachShadow({ mode: 'closed' });
 
-    const keys = {
-      lootlinkLocal: 'vw_lootlink_local',
-      redirectWaitTime: 'vw_redirect_wait_time'
-    };
-
-    let lootlinkLocal = localStorage.getItem(keys.lootlinkLocal);
-    if (lootlinkLocal === null) {
+    let lootlinkLocal = getStoredValue(keys.lootlinkLocal, true);
+    if (typeof lootlinkLocal !== 'boolean') {
       lootlinkLocal = true;
-      localStorage.setItem(keys.lootlinkLocal, 'true');
-    } else {
-      lootlinkLocal = lootlinkLocal === 'true';
+      setStoredValue(keys.lootlinkLocal, true);
     }
 
-    let redirectWaitTime = localStorage.getItem(keys.redirectWaitTime);
-    redirectWaitTime = redirectWaitTime !== null ? parseInt(redirectWaitTime, 10) : 5;
-    if (isNaN(redirectWaitTime)) redirectWaitTime = 5;
+    let redirectWaitTime = getStoredValue(keys.redirectWaitTime, 5);
+    if (typeof redirectWaitTime !== 'number' || isNaN(redirectWaitTime)) {
+      redirectWaitTime = 5;
+      setStoredValue(keys.redirectWaitTime, 5);
+    }
 
     const style = document.createElement('style');
     style.textContent = SETTINGS_CSS;
@@ -413,16 +446,8 @@
     }
 
     function openPanel() {
-      let currentLootlink = localStorage.getItem(keys.lootlinkLocal);
-      if (currentLootlink === null) {
-        currentLootlink = true;
-      } else {
-        currentLootlink = currentLootlink === 'true';
-      }
-
-      let currentWaitTime = localStorage.getItem(keys.redirectWaitTime);
-      currentWaitTime = currentWaitTime !== null ? parseInt(currentWaitTime, 10) : 5;
-      if (isNaN(currentWaitTime)) currentWaitTime = 5;
+      const currentLootlink = getStoredValue(keys.lootlinkLocal, true);
+      const currentWaitTime = getStoredValue(keys.redirectWaitTime, 5);
 
       lootlinkToggle.checked = currentLootlink;
       waitTimeInput.value = currentWaitTime;
@@ -463,14 +488,10 @@
       const newLootlink = lootlinkToggle.checked;
       const newWaitTime = parseInt(waitTimeInput.value, 10);
 
-      localStorage.setItem(keys.lootlinkLocal, String(newLootlink));
+      setStoredValue(keys.lootlinkLocal, newLootlink);
 
       if (!isNaN(newWaitTime) && newWaitTime >= 0 && newWaitTime <= 60) {
-        localStorage.setItem(keys.redirectWaitTime, String(newWaitTime));
-        
-        if (typeof GM_setValue !== 'undefined') {
-          GM_setValue(keys.redirectWaitTime, newWaitTime);
-        }
+        setStoredValue(keys.redirectWaitTime, newWaitTime);
       }
 
       if (window.VW_CONFIG) {
@@ -515,7 +536,7 @@
   }
 
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoading', init);
+    document.addEventListener('DOMContentLoaded', init);
   } else {
     init();
   }
