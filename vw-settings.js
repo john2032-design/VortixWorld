@@ -1,6 +1,8 @@
 (function() {
   'use strict';
 
+  if (window.top !== window.self) return;
+
   const VW_SETTINGS_ID = 'vw-settings-shadow-host';
 
   const SETTINGS_CSS = `
@@ -321,15 +323,9 @@
     const existing = document.getElementById(VW_SETTINGS_ID);
     if (existing) existing.remove();
 
-    const baseBottom = 14;
-    const baseLeft = 14;
-    const gap = 12;
-
     const host = document.createElement('div');
     host.id = VW_SETTINGS_ID;
-    host.dataset.vwBaseBottom = String(baseBottom);
-    host.dataset.vwBaseLeft = String(baseLeft);
-    host.style.cssText = 'all: initial !important; contain: layout style paint !important; position: fixed !important; bottom: 14px !important; left: 14px !important; width: 48px !important; height: 48px !important; z-index: 2147483647 !important; pointer-events: none !important; isolation: isolate !important;';
+    host.style.cssText = 'all: initial !important; position: fixed !important; bottom: 14px !important; left: 14px !important; width: 48px !important; height: 48px !important; z-index: 2147483647 !important; pointer-events: none !important; isolation: isolate !important;';
 
     const shadow = host.attachShadow({ mode: 'closed' });
 
@@ -438,92 +434,6 @@
       backdrop.classList.remove('open');
     }
 
-    function intersects(a, b) {
-      return !(a.right <= b.left || a.left >= b.right || a.bottom <= b.top || a.top >= b.bottom);
-    }
-
-    function isVisibleEl(el) {
-      if (!el || el.nodeType !== 1) return false;
-      const cs = getComputedStyle(el);
-      if (cs.display === 'none' || cs.visibility === 'hidden' || parseFloat(cs.opacity || '1') === 0) return false;
-      const r = el.getBoundingClientRect();
-      if (r.width < 2 || r.height < 2) return false;
-      if (r.bottom <= 0 || r.right <= 0 || r.top >= innerHeight || r.left >= innerWidth) return false;
-      return true;
-    }
-
-    function getCaptchaElements() {
-      const selectors = [
-        'iframe[src*="hcaptcha.com"]',
-        'iframe[src*="recaptcha"]',
-        'iframe[src*="google.com/recaptcha"]',
-        'iframe[title*="hCaptcha" i]',
-        'iframe[title*="recaptcha" i]',
-        '.h-captcha',
-        '.g-recaptcha',
-        '.grecaptcha-badge',
-        '#hcaptcha',
-        '[data-hcaptcha-widget-id]',
-        '[data-sitekey][data-callback]',
-        '[class*="hcaptcha" i]',
-        '[id*="hcaptcha" i]',
-        '[class*="recaptcha" i]',
-        '[id*="recaptcha" i]'
-      ];
-      const list = [];
-      for (const sel of selectors) {
-        document.querySelectorAll(sel).forEach(el => list.push(el));
-      }
-      return list;
-    }
-
-    function adjustForCaptchas() {
-      const hostEl = document.getElementById(VW_SETTINGS_ID);
-      if (!hostEl) return;
-
-      const baseB = parseInt(hostEl.dataset.vwBaseBottom || '14', 10);
-      const baseL = parseInt(hostEl.dataset.vwBaseLeft || '14', 10);
-
-      hostEl.style.bottom = baseB + 'px';
-      hostEl.style.left = baseL + 'px';
-
-      const btnRect = gearBtn.getBoundingClientRect();
-      let requiredBottom = baseB;
-
-      const candidates = getCaptchaElements();
-      for (const el of candidates) {
-        if (!isVisibleEl(el)) continue;
-        const r = el.getBoundingClientRect();
-
-        const expanded = {
-          left: r.left - 2,
-          top: r.top - 2,
-          right: r.right + 2,
-          bottom: r.bottom + 2
-        };
-
-        if (intersects(btnRect, expanded)) {
-          const need = Math.ceil((innerHeight - expanded.top) + gap);
-          if (need > requiredBottom) requiredBottom = need;
-        }
-      }
-
-      if (requiredBottom !== baseB) {
-        hostEl.style.bottom = requiredBottom + 'px';
-        hostEl.style.left = baseL + 'px';
-      }
-    }
-
-    let rafPending = false;
-    function scheduleAdjust() {
-      if (rafPending) return;
-      rafPending = true;
-      requestAnimationFrame(() => {
-        rafPending = false;
-        adjustForCaptchas();
-      });
-    }
-
     gearBtn.addEventListener('click', (e) => {
       e.preventDefault();
       e.stopPropagation();
@@ -577,15 +487,6 @@
     });
 
     document.documentElement.appendChild(host);
-
-    scheduleAdjust();
-    window.addEventListener('resize', scheduleAdjust, { passive: true });
-    window.addEventListener('scroll', scheduleAdjust, { passive: true, capture: true });
-
-    const captchaObserver = new MutationObserver(() => scheduleAdjust());
-    captchaObserver.observe(document.documentElement, { childList: true, subtree: true, attributes: true });
-
-    setInterval(scheduleAdjust, 500);
   }
 
   function init() {
