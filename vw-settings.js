@@ -10,66 +10,76 @@
       box-sizing: border-box;
     }
     
+    :host {
+      all: initial;
+      position: fixed !important;
+      bottom: 14px !important;
+      left: 14px !important;
+      z-index: 2147483647 !important;
+      pointer-events: none !important;
+    }
+    
     .vw-gear-btn {
-      position: fixed;
-      bottom: 14px;
-      left: 14px;
-      z-index: 2147483647;
-      width: 48px;
-      height: 48px;
-      border-radius: 12px;
-      border: 1px solid rgba(255,255,255,0.18);
-      background: linear-gradient(135deg, #000000, #071033, #1e2be8);
-      box-shadow: 0 8px 32px rgba(0,0,0,0.6);
-      color: #cfd6e6;
-      font-size: 22px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      user-select: none;
-      transition: transform 0.2s, box-shadow 0.2s;
-      pointer-events: auto;
+      position: fixed !important;
+      bottom: 0 !important;
+      left: 0 !important;
+      z-index: 2147483647 !important;
+      width: 48px !important;
+      height: 48px !important;
+      border-radius: 12px !important;
+      border: 1px solid rgba(255,255,255,0.18) !important;
+      background: linear-gradient(135deg, #000000, #071033, #1e2be8) !important;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.6) !important;
+      color: #cfd6e6 !important;
+      font-size: 22px !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      cursor: pointer !important;
+      user-select: none !important;
+      transition: transform 0.2s, box-shadow 0.2s !important;
+      pointer-events: auto !important;
+      font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif !important;
     }
     
     .vw-gear-btn:hover {
-      transform: translateY(-2px) scale(1.05);
-      box-shadow: 0 12px 40px rgba(30, 43, 232, 0.4);
+      transform: translateY(-2px) scale(1.05) !important;
+      box-shadow: 0 12px 40px rgba(30, 43, 232, 0.4) !important;
     }
     
     .vw-backdrop {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      width: 100vw;
-      height: 100vh;
-      background: rgba(0, 0, 0, 0.85);
-      z-index: 2147483647;
-      display: none;
-      align-items: center;
-      justify-content: center;
-      backdrop-filter: blur(8px);
-      pointer-events: auto;
+      position: fixed !important;
+      top: 0 !important;
+      left: 0 !important;
+      right: 0 !important;
+      bottom: 0 !important;
+      width: 100vw !important;
+      height: 100vh !important;
+      background: rgba(0, 0, 0, 0.85) !important;
+      z-index: 2147483647 !important;
+      display: none !important;
+      align-items: center !important;
+      justify-content: center !important;
+      backdrop-filter: blur(8px) !important;
+      pointer-events: auto !important;
     }
     
     .vw-backdrop.open {
-      display: flex;
+      display: flex !important;
     }
     
     .vw-panel {
-      width: 90%;
-      max-width: 480px;
-      border-radius: 16px;
-      border: 1px solid rgba(255,255,255,0.14);
-      background: linear-gradient(135deg, #000000 0%, #071033 60%, #1e2be8 100%);
-      box-shadow: 0 30px 100px rgba(0,0,0,0.8);
-      color: #cfd6e6;
-      font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
-      overflow: hidden;
-      animation: vw-slide-in 0.3s ease-out;
-      pointer-events: auto;
+      width: 90% !important;
+      max-width: 480px !important;
+      border-radius: 16px !important;
+      border: 1px solid rgba(255,255,255,0.14) !important;
+      background: linear-gradient(135deg, #000000 0%, #071033 60%, #1e2be8 100%) !important;
+      box-shadow: 0 30px 100px rgba(0,0,0,0.8) !important;
+      color: #cfd6e6 !important;
+      font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif !important;
+      overflow: hidden !important;
+      animation: vw-slide-in 0.3s ease-out !important;
+      pointer-events: auto !important;
     }
     
     @keyframes vw-slide-in {
@@ -84,211 +94,215 @@
     }
     
     .vw-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 16px 20px;
-      border-bottom: 1px solid rgba(255,255,255,0.12);
-      background: rgba(255,255,255,0.04);
+      display: flex !important;
+      align-items: center !important;
+      justify-content: space-between !important;
+      padding: 16px 20px !important;
+      border-bottom: 1px solid rgba(255,255,255,0.12) !important;
+      background: rgba(255,255,255,0.04) !important;
     }
     
     .vw-title {
-      font-weight: 900;
-      font-size: 18px;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      color: #7aa2ff;
+      font-weight: 900 !important;
+      font-size: 18px !important;
+      display: flex !important;
+      align-items: center !important;
+      gap: 12px !important;
+      color: #7aa2ff !important;
     }
     
     .vw-badge {
-      width: 36px;
-      height: 36px;
-      border-radius: 10px;
-      border: 1px solid rgba(255,255,255,0.14);
-      background: rgba(255,255,255,0.06);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: 950;
-      font-size: 12px;
-      color: #cfd6e6;
+      width: 36px !important;
+      height: 36px !important;
+      border-radius: 10px !important;
+      border: 1px solid rgba(255,255,255,0.14) !important;
+      background: rgba(255,255,255,0.06) !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      font-weight: 950 !important;
+      font-size: 12px !important;
+      color: #cfd6e6 !important;
     }
     
     .vw-close-btn {
-      width: 36px;
-      height: 36px;
-      border-radius: 10px;
-      border: 1px solid rgba(255,255,255,0.16);
-      background: rgba(0,0,0,0.18);
-      color: #cfd6e6;
-      cursor: pointer;
-      font-size: 18px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: background 0.2s;
+      width: 36px !important;
+      height: 36px !important;
+      border-radius: 10px !important;
+      border: 1px solid rgba(255,255,255,0.16) !important;
+      background: rgba(0,0,0,0.18) !important;
+      color: #cfd6e6 !important;
+      cursor: pointer !important;
+      font-size: 18px !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      transition: background 0.2s !important;
+      font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif !important;
     }
     
     .vw-close-btn:hover {
-      background: rgba(255,255,255,0.1);
+      background: rgba(255,255,255,0.1) !important;
     }
     
     .vw-body {
-      padding: 16px 20px;
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
+      padding: 16px 20px !important;
+      display: flex !important;
+      flex-direction: column !important;
+      gap: 14px !important;
     }
     
     .vw-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      padding: 14px;
-      border-radius: 12px;
-      border: 1px solid rgba(255,255,255,0.12);
-      background: rgba(255,255,255,0.05);
+      display: flex !important;
+      align-items: center !important;
+      justify-content: space-between !important;
+      gap: 12px !important;
+      padding: 14px !important;
+      border-radius: 12px !important;
+      border: 1px solid rgba(255,255,255,0.12) !important;
+      background: rgba(255,255,255,0.05) !important;
     }
     
     .vw-label {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-      flex: 1;
+      display: flex !important;
+      flex-direction: column !important;
+      gap: 4px !important;
+      flex: 1 !important;
     }
     
     .vw-label-title {
-      font-size: 14px;
-      font-weight: 900;
-      color: #7aa2ff;
+      font-size: 14px !important;
+      font-weight: 900 !important;
+      color: #7aa2ff !important;
     }
     
     .vw-label-desc {
-      font-size: 12px;
-      color: rgba(207,214,230,0.75);
-      font-weight: 600;
+      font-size: 12px !important;
+      color: rgba(207,214,230,0.75) !important;
+      font-weight: 600 !important;
     }
     
     .vw-switch {
-      position: relative;
-      width: 52px;
-      height: 28px;
-      flex-shrink: 0;
+      position: relative !important;
+      width: 52px !important;
+      height: 28px !important;
+      flex-shrink: 0 !important;
     }
     
     .vw-switch input {
-      opacity: 0;
-      width: 100%;
-      height: 100%;
-      position: absolute;
-      top: 0;
-      left: 0;
-      cursor: pointer;
-      z-index: 1;
-      margin: 0;
+      opacity: 0 !important;
+      width: 100% !important;
+      height: 100% !important;
+      position: absolute !important;
+      top: 0 !important;
+      left: 0 !important;
+      cursor: pointer !important;
+      z-index: 1 !important;
+      margin: 0 !important;
     }
     
     .vw-switch-slider {
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      border-radius: 999px;
-      background: rgba(255,255,255,0.18);
-      transition: 0.3s;
-      pointer-events: none;
+      position: absolute !important;
+      top: 0 !important;
+      left: 0 !important;
+      right: 0 !important;
+      bottom: 0 !important;
+      border-radius: 999px !important;
+      background: rgba(255,255,255,0.18) !important;
+      transition: 0.3s !important;
+      pointer-events: none !important;
     }
     
     .vw-switch-slider:before {
-      content: "";
-      position: absolute;
-      top: 4px;
-      left: 4px;
-      width: 20px;
-      height: 20px;
-      border-radius: 50%;
-      background: #cfd6e6;
-      transition: 0.3s;
+      content: "" !important;
+      position: absolute !important;
+      top: 4px !important;
+      left: 4px !important;
+      width: 20px !important;
+      height: 20px !important;
+      border-radius: 50% !important;
+      background: #cfd6e6 !important;
+      transition: 0.3s !important;
     }
     
     .vw-switch input:checked + .vw-switch-slider {
-      background: linear-gradient(90deg, #0f1b4f, #1e2be8);
+      background: linear-gradient(90deg, #0f1b4f, #1e2be8) !important;
     }
     
     .vw-switch input:checked + .vw-switch-slider:before {
-      transform: translateX(24px);
+      transform: translateX(24px) !important;
     }
     
     .vw-input {
-      width: 80px;
-      background: rgba(0,0,0,0.25);
-      border: 1px solid rgba(255,255,255,0.15);
-      color: #fff;
-      border-radius: 8px;
-      padding: 8px 10px;
-      text-align: center;
-      font-weight: 700;
-      font-size: 14px;
-      outline: none;
-      flex-shrink: 0;
+      width: 80px !important;
+      background: rgba(0,0,0,0.25) !important;
+      border: 1px solid rgba(255,255,255,0.15) !important;
+      color: #fff !important;
+      border-radius: 8px !important;
+      padding: 8px 10px !important;
+      text-align: center !important;
+      font-weight: 700 !important;
+      font-size: 14px !important;
+      outline: none !important;
+      flex-shrink: 0 !important;
+      font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif !important;
     }
     
     .vw-input:focus {
-      border-color: #1e2be8;
-      box-shadow: 0 0 0 2px rgba(30, 43, 232, 0.3);
+      border-color: #1e2be8 !important;
+      box-shadow: 0 0 0 2px rgba(30, 43, 232, 0.3) !important;
     }
     
     .vw-actions {
-      display: flex;
-      align-items: center;
-      justify-content: flex-end;
-      gap: 10px;
-      padding-top: 6px;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: flex-end !important;
+      gap: 10px !important;
+      padding-top: 6px !important;
     }
     
     .vw-btn {
-      padding: 10px 16px;
-      border-radius: 10px;
-      border: 1px solid rgba(255,255,255,0.16);
-      background: rgba(0,0,0,0.18);
-      color: #cfd6e6;
-      font-weight: 800;
-      font-size: 13px;
-      cursor: pointer;
-      transition: background 0.2s, transform 0.2s;
+      padding: 10px 16px !important;
+      border-radius: 10px !important;
+      border: 1px solid rgba(255,255,255,0.16) !important;
+      background: rgba(0,0,0,0.18) !important;
+      color: #cfd6e6 !important;
+      font-weight: 800 !important;
+      font-size: 13px !important;
+      cursor: pointer !important;
+      transition: background 0.2s, transform 0.2s !important;
+      font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif !important;
     }
     
     .vw-btn:hover {
-      background: rgba(255,255,255,0.08);
-      transform: translateY(-1px);
+      background: rgba(255,255,255,0.08) !important;
+      transform: translateY(-1px) !important;
     }
     
     .vw-btn-primary {
-      background: linear-gradient(90deg, #0f1b4f, #1e2be8);
-      border: 1px solid rgba(255,255,255,0.14);
+      background: linear-gradient(90deg, #0f1b4f, #1e2be8) !important;
+      border: 1px solid rgba(255,255,255,0.14) !important;
     }
     
     .vw-btn-primary:hover {
-      background: linear-gradient(90deg, #1a2a6c, #2a3bf8);
+      background: linear-gradient(90deg, #1a2a6c, #2a3bf8) !important;
     }
     
     .vw-toast {
-      position: fixed;
-      bottom: 70px;
-      left: 14px;
-      padding: 10px 16px;
-      border-radius: 10px;
-      background: linear-gradient(90deg, #0f1b4f, #1e2be8);
-      color: #cfd6e6;
-      font-weight: 700;
-      font-size: 13px;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
-      animation: vw-toast-in 0.3s ease-out;
-      z-index: 2147483647;
-      pointer-events: none;
+      position: fixed !important;
+      bottom: 70px !important;
+      left: 14px !important;
+      padding: 10px 16px !important;
+      border-radius: 10px !important;
+      background: linear-gradient(90deg, #0f1b4f, #1e2be8) !important;
+      color: #cfd6e6 !important;
+      font-weight: 700 !important;
+      font-size: 13px !important;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5) !important;
+      animation: vw-toast-in 0.3s ease-out !important;
+      z-index: 2147483647 !important;
+      pointer-events: none !important;
+      font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif !important;
     }
     
     @keyframes vw-toast-in {
@@ -309,7 +323,7 @@
 
     const host = document.createElement('div');
     host.id = VW_SETTINGS_ID;
-    host.style.cssText = 'all: initial; position: fixed !important; top: 0 !important; left: 0 !important; width: 0 !important; height: 0 !important; z-index: 2147483647 !important; pointer-events: none !important;';
+    host.style.cssText = 'all: initial !important; contain: layout style paint !important; position: fixed !important; bottom: 14px !important; left: 14px !important; width: 48px !important; height: 48px !important; z-index: 2147483647 !important; pointer-events: none !important; isolation: isolate !important;';
     
     const shadow = host.attachShadow({ mode: 'closed' });
 
@@ -470,11 +484,7 @@
       location.reload();
     });
 
-    if (document.body) {
-      document.body.appendChild(host);
-    } else {
-      document.documentElement.appendChild(host);
-    }
+    document.documentElement.appendChild(host);
   }
 
   function init() {
