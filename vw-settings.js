@@ -319,7 +319,12 @@
     };
 
     let lootlinkLocal = localStorage.getItem(keys.lootlinkLocal);
-    lootlinkLocal = lootlinkLocal !== null ? lootlinkLocal === 'true' : true;
+    if (lootlinkLocal === null) {
+      lootlinkLocal = true;
+      localStorage.setItem(keys.lootlinkLocal, 'true');
+    } else {
+      lootlinkLocal = lootlinkLocal === 'true';
+    }
 
     let redirectWaitTime = localStorage.getItem(keys.redirectWaitTime);
     redirectWaitTime = redirectWaitTime !== null ? parseInt(redirectWaitTime, 10) : 5;
@@ -393,7 +398,11 @@
 
     function openPanel() {
       let currentLootlink = localStorage.getItem(keys.lootlinkLocal);
-      currentLootlink = currentLootlink !== null ? currentLootlink === 'true' : true;
+      if (currentLootlink === null) {
+        currentLootlink = true;
+      } else {
+        currentLootlink = currentLootlink === 'true';
+      }
       
       let currentWaitTime = localStorage.getItem(keys.redirectWaitTime);
       currentWaitTime = currentWaitTime !== null ? parseInt(currentWaitTime, 10) : 5;
