@@ -380,7 +380,7 @@
           <div class="vw-row">
             <div class="vw-label">
               <div class="vw-label-title">Redirect Wait Time</div>
-              <div class="vw-label-desc">Seconds before auto-redirect (0-60)</div>
+              <div class="vw-label-desc">Applies globally across all domains (0-60)</div>
             </div>
             <input type="number" class="vw-input" id="vwWaitTimeInput" min="0" max="60" value="${redirectWaitTime}">
           </div>
@@ -467,6 +467,10 @@
 
       if (!isNaN(newWaitTime) && newWaitTime >= 0 && newWaitTime <= 60) {
         localStorage.setItem(keys.redirectWaitTime, String(newWaitTime));
+        
+        if (typeof GM_setValue !== 'undefined') {
+          GM_setValue(keys.redirectWaitTime, newWaitTime);
+        }
       }
 
       if (window.VW_CONFIG) {
@@ -476,7 +480,7 @@
         }
       }
 
-      showToast('✓ Settings saved!');
+      showToast('✓ Settings saved globally!');
       closePanel();
     });
 
@@ -511,7 +515,7 @@
   }
 
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
+    document.addEventListener('DOMContentLoading', init);
   } else {
     init();
   }
