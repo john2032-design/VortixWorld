@@ -47,6 +47,9 @@
     luarmorWaitTime: 'vw_luarmor_wait_time'
   }
 
+  const CONFIG_EXPORT_KEY = 'vw_config_export_v1'
+  const BC_NAME = 'vw_settings_bc'
+
   function hasGM() {
     return typeof GM_getValue === 'function' && typeof GM_setValue === 'function'
   }
@@ -76,12 +79,44 @@
     return Math.min(max, Math.max(min, n))
   }
 
-  function syncVWConfigFromStorage() {
+  function getCurrentConfigFromStorage() {
+    return {
+      keys: keys,
+      lootlinkLocal: !!getStoredValue(keys.lootlinkLocal, true),
+      redirectWaitTime: clampInt(getStoredValue(keys.redirectWaitTime, 5), 0, 60, 5),
+      luarmorWaitTime: clampInt(getStoredValue(keys.luarmorWaitTime, 20), 0, 120, 20)
+    }
+  }
+
+  function exportConfigToWindowAndStorage() {
+    const cfg = getCurrentConfigFromStorage()
     window.VW_CONFIG = window.VW_CONFIG || {}
-    window.VW_CONFIG.keys = window.VW_CONFIG.keys || keys
-    window.VW_CONFIG.lootlinkLocal = !!getStoredValue(keys.lootlinkLocal, true)
-    window.VW_CONFIG.redirectWaitTime = clampInt(getStoredValue(keys.redirectWaitTime, 5), 0, 60, 5)
-    window.VW_CONFIG.luarmorWaitTime = clampInt(getStoredValue(keys.luarmorWaitTime, 20), 0, 120, 20)
+    window.VW_CONFIG.keys = keys
+    window.VW_CONFIG.lootlinkLocal = cfg.lootlinkLocal
+    window.VW_CONFIG.redirectWaitTime = cfg.redirectWaitTime
+    window.VW_CONFIG.luarmorWaitTime = cfg.luarmorWaitTime
+    try {
+      localStorage.setItem(CONFIG_EXPORT_KEY, JSON.stringify(cfg))
+    } catch (_) {}
+    try {
+      if (typeof BroadcastChannel === 'function') {
+        const bc = new BroadcastChannel(BC_NAME)
+        bc.postMessage({ t: 'vw_settings_update', cfg })
+        bc.close()
+      }
+    } catch (_) {}
+  }
+
+  function importExportedConfigIfNeeded() {
+    try {
+      const raw = localStorage.getItem(CONFIG_EXPORT_KEY)
+      if (!raw) return
+      const cfg = JSON.parse(raw)
+      if (!cfg) return
+      if (typeof cfg.lootlinkLocal === 'boolean') setStoredValue(keys.lootlinkLocal, cfg.lootlinkLocal)
+      if (typeof cfg.redirectWaitTime === 'number') setStoredValue(keys.redirectWaitTime, clampInt(cfg.redirectWaitTime, 0, 60, 5))
+      if (typeof cfg.luarmorWaitTime === 'number') setStoredValue(keys.luarmorWaitTime, clampInt(cfg.luarmorWaitTime, 0, 120, 20))
+    } catch (_) {}
   }
 
   function createSettingsUI() {
@@ -197,9 +232,9 @@
       setStoredValue(keys.redirectWaitTime, newWaitTime)
       setStoredValue(keys.luarmorWaitTime, newLuarmorWaitTime)
 
-      syncVWConfigFromStorage()
+      exportConfigToWindowAndStorage()
 
-      showToast(shadow, hasGM() ? '✓ Settings saved globally!' : '✓ Settings saved (localStorage)!')
+      showToast(shadow, hasGM() ? '✓ Settings saved globally!' : '✓ Settings saved across pages!')
       closePanel()
     })
 
@@ -225,7 +260,29 @@
   }
 
   function init() {
-    syncVWConfigFromStorage()
+    importExportedConfigIfNeeded()
+    exportConfigToWindowAndStorage()
+
+    try {
+      if (typeof BroadcastChannel === 'function') {
+        const bc = new BroadcastChannel(BC_NAME)
+        bc.onmessage = (ev) => {
+          try {
+            const data = ev && ev.data
+            if (!data || data.t !== 'vw_settings_update' || !data.cfg) return
+            const cfg = data.cfg
+            if (typeof cfg.lootlinkLocal === 'boolean') setStoredValue(keys.lootlinkLocal, cfg.lootlinkLocal)
+            if (typeof cfg.redirectWaitTime === 'number') setStoredValue(keys.redirectWaitTime, clampInt(cfg.redirectWaitTime, 0, 60, 5))
+            if (typeof cfg.luarmorWaitTime === 'number') setStoredValue(keys.luarmorWaitTime, clampInt(cfg.luarmorWaitTime, 0, 120, 20))
+            exportConfigToWindowAndStorage()
+          } catch (_) {}
+        }
+        setTimeout(() => {
+          try { bc.close() } catch (_) {}
+        }, 600000)
+      }
+    } catch (_) {}
+
     createSettingsUI()
     const observer = new MutationObserver(() => {
       if (!document.getElementById(VW_SETTINGS_ID)) createSettingsUI()
@@ -234,6 +291,14 @@
     setInterval(() => {
       if (!document.getElementById(VW_SETTINGS_ID)) createSettingsUI()
     }, 2000)
+
+    window.addEventListener('storage', (e) => {
+      if (!e) return
+      if (e.key === keys.redirectWaitTime || e.key === keys.luarmorWaitTime || e.key === keys.lootlinkLocal || e.key === CONFIG_EXPORT_KEY) {
+        importExportedConfigIfNeeded()
+        exportConfigToWindowAndStorage()
+      }
+    })
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init)
