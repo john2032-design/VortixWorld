@@ -321,7 +321,8 @@
 
   const keys = {
     lootlinkLocal: 'vw_lootlink_local',
-    redirectWaitTime: 'vw_redirect_wait_time'
+    redirectWaitTime: 'vw_redirect_wait_time',
+    luarmorWaitTime: 'vw_luarmor_wait_time'
   };
 
   function getStoredValue(key, defaultValue) {
@@ -333,7 +334,7 @@
     const lsValue = localStorage.getItem(key);
     if (lsValue !== null) {
       if (key === keys.lootlinkLocal) return lsValue === 'true';
-      if (key === keys.redirectWaitTime) {
+      if (key === keys.redirectWaitTime || key === keys.luarmorWaitTime) {
         const parsed = parseInt(lsValue, 10);
         return isNaN(parsed) ? defaultValue : parsed;
       }
@@ -350,7 +351,7 @@
     
     if (key === keys.lootlinkLocal) {
       localStorage.setItem(key, String(value));
-    } else if (key === keys.redirectWaitTime) {
+    } else if (key === keys.redirectWaitTime || key === keys.luarmorWaitTime) {
       localStorage.setItem(key, String(value));
     } else {
       localStorage.setItem(key, value);
@@ -377,6 +378,12 @@
     if (typeof redirectWaitTime !== 'number' || isNaN(redirectWaitTime)) {
       redirectWaitTime = 5;
       setStoredValue(keys.redirectWaitTime, 5);
+    }
+
+    let luarmorWaitTime = getStoredValue(keys.luarmorWaitTime, 20);
+    if (typeof luarmorWaitTime !== 'number' || isNaN(luarmorWaitTime)) {
+      luarmorWaitTime = 20;
+      setStoredValue(keys.luarmorWaitTime, 20);
     }
 
     const style = document.createElement('style');
@@ -417,6 +424,13 @@
             </div>
             <input type="number" class="vw-input" id="vwWaitTimeInput" min="0" max="60" value="${redirectWaitTime}">
           </div>
+          <div class="vw-row">
+            <div class="vw-label">
+              <div class="vw-label-title">Luarmor Next Wait</div>
+              <div class="vw-label-desc">Delay before enabling Next (0-120)</div>
+            </div>
+            <input type="number" class="vw-input" id="vwLuarmorWaitTimeInput" min="0" max="120" value="${luarmorWaitTime}">
+          </div>
           <div class="vw-actions">
             <button class="vw-btn" id="vwReloadBtn" type="button">Reload Page</button>
             <button class="vw-btn vw-btn-primary" id="vwApplyBtn" type="button">Apply & Save</button>
@@ -430,6 +444,7 @@
     const panel = shadow.querySelector('.vw-panel');
     const lootlinkToggle = shadow.querySelector('#vwLootlinkToggle');
     const waitTimeInput = shadow.querySelector('#vwWaitTimeInput');
+    const luarmorWaitTimeInput = shadow.querySelector('#vwLuarmorWaitTimeInput');
     const applyBtn = shadow.querySelector('#vwApplyBtn');
     const reloadBtn = shadow.querySelector('#vwReloadBtn');
 
@@ -448,9 +463,11 @@
     function openPanel() {
       const currentLootlink = getStoredValue(keys.lootlinkLocal, true);
       const currentWaitTime = getStoredValue(keys.redirectWaitTime, 5);
+      const currentLuarmorWaitTime = getStoredValue(keys.luarmorWaitTime, 20);
 
       lootlinkToggle.checked = currentLootlink;
       waitTimeInput.value = currentWaitTime;
+      luarmorWaitTimeInput.value = currentLuarmorWaitTime;
 
       backdrop.classList.add('open');
     }
@@ -487,6 +504,7 @@
 
       const newLootlink = lootlinkToggle.checked;
       const newWaitTime = parseInt(waitTimeInput.value, 10);
+      const newLuarmorWaitTime = parseInt(luarmorWaitTimeInput.value, 10);
 
       setStoredValue(keys.lootlinkLocal, newLootlink);
 
@@ -494,10 +512,19 @@
         setStoredValue(keys.redirectWaitTime, newWaitTime);
       }
 
+      if (!isNaN(newLuarmorWaitTime) && newLuarmorWaitTime >= 0 && newLuarmorWaitTime <= 120) {
+        setStoredValue(keys.luarmorWaitTime, newLuarmorWaitTime);
+      }
+
       if (window.VW_CONFIG) {
-        window.VW_CONFIG.lootlinkLocal = newLootlink;
+        window.VW_CONFIG.keys = window.VW_CONFIG.keys || {}
+        window.VW_CONFIG.keys.luarmorWaitTime = keys.luarmorWaitTime
+        window.VW_CONFIG.lootlinkLocal = newLootlink
         if (!isNaN(newWaitTime) && newWaitTime >= 0) {
-          window.VW_CONFIG.redirectWaitTime = newWaitTime;
+          window.VW_CONFIG.redirectWaitTime = newWaitTime
+        }
+        if (!isNaN(newLuarmorWaitTime) && newLuarmorWaitTime >= 0) {
+          window.VW_CONFIG.luarmorWaitTime = newLuarmorWaitTime
         }
       }
 
