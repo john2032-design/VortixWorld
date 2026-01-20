@@ -47,22 +47,45 @@
   }
   function getStoredValue(key, defaultValue) {
     if (hasGM()) {
-      return GM_getValue(key, defaultValue)
+      try {
+        const v = GM_getValue(key)
+        if (typeof v !== 'undefined') return v
+      } catch (_) {}
     }
-    const lsValue = localStorage.getItem(key)
-    if (lsValue === null) return defaultValue
-    if (typeof defaultValue === 'boolean') return lsValue === 'true'
-    if (typeof defaultValue === 'number') {
-      const n = parseInt(lsValue, 10)
-      return Number.isFinite(n) ? n : defaultValue
+    try {
+      const lsValue = localStorage.getItem(key)
+      if (lsValue === null) return defaultValue
+      if (typeof defaultValue === 'boolean') return lsValue === 'true'
+      if (typeof defaultValue === 'number') {
+        const n = parseInt(lsValue, 10)
+        return Number.isFinite(n) ? n : defaultValue
+      }
+      return lsValue
+    } catch (_) {
+      return defaultValue
     }
-    return lsValue
   }
   function setStoredValue(key, value) {
     if (hasGM()) {
       try { GM_setValue(key, value) } catch (_) {}
     }
     try { localStorage.setItem(key, String(value)) } catch (_) {}
+    try { sessionStorage.setItem(key, String(value)) } catch (_) {}
+    try {
+      if (typeof BroadcastChannel !== 'undefined') {
+        try {
+          const bc = new BroadcastChannel('vortixworld-settings')
+          bc.postMessage({ key, value })
+          bc.close()
+        } catch (_) {}
+      }
+    } catch (_) {}
+    try {
+      window.dispatchEvent(new CustomEvent('vw-settings-updated', { detail: { [key]: value } }))
+    } catch (_) {}
+    try {
+      window.postMessage({ source: 'vortixworld-settings', type: 'VW_SETTING_CHANGED', payload: { key, value } }, '*')
+    } catch (_) {}
   }
   function clampInt(value, min, max, def) {
     const n = parseInt(String(value), 10)
@@ -74,7 +97,7 @@
     if (existing) existing.remove()
     const host = document.createElement('div')
     host.id = VW_SETTINGS_ID
-    host.style.cssText = 'all: initial !important; position: fixed !important; bottom: 14px !important; left: 14px !important; width: 48px !important; height: 48px !important; z-index: 2147483647 !important; pointer-events: none !important; isolation: isolate !important;'
+    host.style.cssText = 'all:initial; position: fixed !important; bottom: 14px !important; left: 14px !important; width: 48px !important; height: 48px !important; z-index: 2147483647 !important; pointer-events: none !important; isolation: isolate !important;'
     const shadow = host.attachShadow({ mode: 'closed' })
     const style = document.createElement('style')
     style.textContent = SETTINGS_CSS
@@ -168,6 +191,8 @@
           window.VW_CONFIG.lootlinkLocal = newLootlink
           window.VW_CONFIG.redirectWaitTime = newWaitTime
           window.VW_CONFIG.luarmorWaitTime = newLuarmorWaitTime
+        } else {
+          try { window.VW_CONFIG = { lootlinkLocal: newLootlink, redirectWaitTime: newWaitTime, luarmorWaitTime: newLuarmorWaitTime } } catch (_) {}
         }
       } catch (_) {}
       try {
@@ -189,6 +214,13 @@
             luarmorWaitTime: newLuarmorWaitTime
           }
         }, '*')
+      } catch (_) {}
+      try {
+        if (typeof BroadcastChannel !== 'undefined') {
+          const bc = new BroadcastChannel('vortixworld-settings')
+          bc.postMessage({ lootlinkLocal: newLootlink, redirectWaitTime: newWaitTime, luarmorWaitTime: newLuarmorWaitTime })
+          bc.close()
+        }
       } catch (_) {}
       showToast(shadow, hasGM() ? '✓ Settings saved globally!' : '✓ Settings saved (localStorage)!')
       closePanel()
@@ -223,4 +255,34 @@
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init)
   else init()
+  try {
+    window.addEventListener('message', (ev) => {
+      if (!ev.data || ev.data.source !== 'vortixworld-settings') return
+      const p = ev.data.payload || {}
+      try {
+        if (typeof p.lootlinkLocal !== 'undefined') setStoredValue(keys.lootlinkLocal, !!p.lootlinkLocal)
+        if (typeof p.redirectWaitTime === 'number') setStoredValue(keys.redirectWaitTime, p.redirectWaitTime)
+        if (typeof p.luarmorWaitTime === 'number') setStoredValue(keys.luarmorWaitTime, p.luarmorWaitTime)
+        try {
+          window.dispatchEvent(new CustomEvent('vw-settings-updated', { detail: p }))
+        } catch (_) {}
+      } catch (_) {}
+    })
+  } catch (_) {}
+  try {
+    if (typeof BroadcastChannel !== 'undefined') {
+      const bc = new BroadcastChannel('vortixworld-settings')
+      bc.addEventListener('message', (ev) => {
+        const p = ev.data || {}
+        try {
+          if (typeof p.lootlinkLocal !== 'undefined') setStoredValue(keys.lootlinkLocal, !!p.lootlinkLocal)
+          if (typeof p.redirectWaitTime === 'number') setStoredValue(keys.redirectWaitTime, p.redirectWaitTime)
+          if (typeof p.luarmorWaitTime === 'number') setStoredValue(keys.luarmorWaitTime, p.luarmorWaitTime)
+          try {
+            window.dispatchEvent(new CustomEvent('vw-settings-updated', { detail: p }))
+          } catch (_) {}
+        } catch (_) {}
+      })
+    }
+  } catch (_) {}
 })()
