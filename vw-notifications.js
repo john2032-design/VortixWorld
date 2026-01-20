@@ -3,19 +3,49 @@
 
   const STYLE_ID = 'vwNotificationStyles'
   const CONTAINER_ID = 'vwNotificationContainer'
-  const shown = new Set()
+  const BYPASS_HOST = 'vortix-world-bypass.vercel.app'
+  const DISPLAY_MS = 3500
+  const GAP_MS = 250
+  const shownNonLoop = new Set()
+
+  const MATCH_HOSTS_SORTED = [
+    'airflowscript.com',
+    'auth.platorelay.com',
+    'best-links.org',
+    'blox-script.com',
+    'cuttlinks.com',
+    'cuttty.com',
+    'cuty.io',
+    'cutynow.com',
+    'keyrblx.com',
+    'linkvertise.com',
+    'links-loot.com',
+    'linksloot.net',
+    'loot-labs.com',
+    'loot-link.com',
+    'loot-links.com',
+    'lootdest.com',
+    'lootdest.info',
+    'lootdest.org',
+    'lootlabs.com',
+    'lootlink.org',
+    'lootlinks.co',
+    'lootlinks.com',
+    'mboost.me',
+    'neoxsoftworks.eu',
+    'pandadevelopment.net',
+    'work.ink'
+  ]
 
   let defaultIconHtml = ''
+  let loopStarted = false
   let loopTimer = null
-  let loopItems = []
-  let loopIndex = 0
-  const LOOP_MS = 3500
 
   const CSS = `
 #${CONTAINER_ID}{
   position:fixed !important;
-  top:20px !important;
-  right:20px !important;
+  top:18px !important;
+  right:18px !important;
   z-index:2147483647 !important;
   display:flex !important;
   flex-direction:column !important;
@@ -24,68 +54,88 @@
   align-items:flex-end !important;
 }
 .vw-notif-toast{
-  background:rgba(10,14,40,0.98) !important;
+  width:320px !important;
+  max-width:92vw !important;
+  background:rgba(10,14,40,0.96) !important;
+  border:1px solid rgba(255,255,255,0.10) !important;
   border-left:4px solid #1e2be8 !important;
-  border-radius:10px !important;
-  width:300px !important;
-  max-width:90vw !important;
-  box-shadow:0 8px 32px rgba(0,0,0,0.55) !important;
+  border-radius:12px !important;
+  box-shadow:0 18px 60px rgba(0,0,0,0.60) !important;
   overflow:hidden !important;
-  animation:vw-slide-in 0.35s cubic-bezier(0.175,0.885,0.32,1.275) forwards !important;
-  display:flex !important;
-  flex-direction:column !important;
   pointer-events:auto !important;
-  flex-shrink:0 !important;
-  border:1px solid rgba(255,255,255,0.08) !important;
+  transform:translateX(120%) !important;
+  opacity:0 !important;
+  animation:vw-toast-in 280ms cubic-bezier(0.2,0.9,0.2,1) forwards !important;
 }
 .vw-notif-content{
-  padding:10px !important;
   display:flex !important;
-  align-items:center !important;
-  gap:10px !important;
-  font-weight:800 !important;
-  font-size:13px !important;
-  color:#cfd6e6 !important;
+  gap:12px !important;
+  padding:12px 12px !important;
+  align-items:flex-start !important;
   font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif !important;
 }
-.vw-icon-circle{
-  width:26px !important;
-  height:26px !important;
+.vw-notif-icon{
+  width:34px !important;
+  height:34px !important;
   border-radius:50% !important;
-  background:rgba(255,255,255,0.05) !important;
+  overflow:hidden !important;
+  background:rgba(255,255,255,0.06) !important;
   display:flex !important;
   align-items:center !important;
   justify-content:center !important;
-  font-size:14px !important;
-  overflow:hidden !important;
-  flex:0 0 auto !important;
+  flex-shrink:0 !important;
+  border:1px solid rgba(255,255,255,0.10) !important;
+}
+.vw-notif-icon img{
+  width:100% !important;
+  height:100% !important;
+  object-fit:cover !important;
+}
+.vw-notif-text{
+  display:flex !important;
+  flex-direction:column !important;
+  gap:3px !important;
+  min-width:0 !important;
 }
 .vw-notif-title{
-  color:#7aa2ff !important;
   font-weight:900 !important;
-  font-size:13px !important;
-  line-height:1.15 !important;
+  font-size:14px !important;
+  color:#7aa2ff !important;
+  letter-spacing:0.2px !important;
+  line-height:1.2 !important;
 }
-.vw-notif-msg{
-  color:rgba(207,214,230,0.85) !important;
+.vw-notif-message{
   font-weight:700 !important;
   font-size:12px !important;
-  line-height:1.15 !important;
-  white-space:nowrap !important;
-  overflow:hidden !important;
-  text-overflow:ellipsis !important;
+  color:rgba(207,214,230,0.85) !important;
+  line-height:1.35 !important;
+  word-break:break-word !important;
 }
 .vw-notif-bar{
   height:3px !important;
-  background:linear-gradient(90deg,#0f1b4f,#1e2be8) !important;
   width:100% !important;
-  animation:vw-progress linear forwards !important;
+  background:linear-gradient(90deg,#0f1b4f,#1e2be8) !important;
+  transform-origin:left center !important;
+  animation:vw-bar linear forwards !important;
 }
-@keyframes vw-slide-in{from{transform:translateX(120%);opacity:0;}to{transform:translateX(0);opacity:1;}}
-@keyframes vw-fade-out{from{opacity:1;transform:scale(1);}to{opacity:0;transform:scale(0.9);pointer-events:none;}}
-@keyframes vw-progress{from{width:100%;}to{width:0%;}}
+.vw-toast-out{
+  animation:vw-toast-out 360ms cubic-bezier(0.4,0,0.2,1) forwards !important;
+}
+@keyframes vw-toast-in{
+  from{transform:translateX(120%);opacity:0;}
+  to{transform:translateX(0);opacity:1;}
+}
+@keyframes vw-toast-out{
+  from{transform:translateX(0);opacity:1;}
+  to{transform:translateX(30%);opacity:0;}
+}
+@keyframes vw-bar{
+  from{transform:scaleX(1);}
+  to{transform:scaleX(0);}
+}
 @media (max-width:480px){
-  #${CONTAINER_ID}{top:90px !important; right:10px !important;}
+  #${CONTAINER_ID}{top:88px !important; right:10px !important;}
+  .vw-notif-toast{width:300px !important;}
 }
 `
 
@@ -98,87 +148,124 @@
   }
 
   function ensureContainer() {
-    let container = document.getElementById(CONTAINER_ID)
-    if (container) return container
-    container = document.createElement('div')
-    container.id = CONTAINER_ID
-    ;(document.body || document.documentElement).appendChild(container)
-    return container
+    let c = document.getElementById(CONTAINER_ID)
+    if (c) return c
+    c = document.createElement('div')
+    c.id = CONTAINER_ID
+    ;(document.body || document.documentElement).appendChild(c)
+    return c
   }
 
-  function mountSafe(fn) {
-    if (document.body) return fn()
-    document.addEventListener('DOMContentLoaded', fn, { once: true })
+  function hostIsIgnoredForUnsupported() {
+    const h = (location.hostname || '').toLowerCase()
+    if (h === BYPASS_HOST || h.endsWith('.' + BYPASS_HOST)) return true
+    if (h === 'ads.luarmor.net' || h.endsWith('.ads.luarmor.net')) return true
+    return false
   }
 
-  function show(title, message, type = 'info', timeout = LOOP_MS, iconHtml) {
-    mountSafe(() => {
-      ensureStyles()
-      const container = ensureContainer()
+  function normalizeIcon(iconHtml, type) {
+    const s = String(iconHtml || '').trim()
+    if (s) return s
+    if (type === 'success') return '<span>✔️</span>'
+    if (type === 'warning') return '<span>⚠️</span>'
+    if (type === 'error') return '<span>❌</span>'
+    return '<span>ℹ️</span>'
+  }
 
-      const id = `${title}::${message}::${type}`
-      if (shown.has(id)) return
-      shown.add(id)
+  function show(title, message, type = 'info', timeout = DISPLAY_MS, iconHtml) {
+    if (!document.body) {
+      document.addEventListener('DOMContentLoaded', () => show(title, message, type, timeout, iconHtml), { once: true })
+      return
+    }
 
-      let iconContent = iconHtml || defaultIconHtml || ''
-      if (type === 'success') iconContent = '✔️'
-      if (type === 'warning') iconContent = '⚠️'
-      if (type === 'error') iconContent = '❌'
-      if (!iconContent) iconContent = 'ℹ️'
+    if (String(title).includes('Unsupported Site') && hostIsIgnoredForUnsupported()) return
 
-      const toast = document.createElement('div')
-      toast.className = 'vw-notif-toast'
-      toast.innerHTML = `
-        <div class="vw-notif-content">
-          <div class="vw-icon-circle">${iconContent}</div>
-          <div style="display:flex;flex-direction:column;gap:2px;min-width:0;">
-            <div class="vw-notif-title">${String(title || '')}</div>
-            <div class="vw-notif-msg">${String(message || '')}</div>
-          </div>
+    ensureStyles()
+    const container = ensureContainer()
+
+    const loopLike =
+      String(title) === 'VortixWorld Bypass' ||
+      String(title) === 'Supported Site' ||
+      String(title) === 'Join Discord' ||
+      String(title) === 'Created By'
+
+    const key = `${title}::${message}::${type}`
+    if (!loopLike) {
+      if (shownNonLoop.has(key)) return
+      shownNonLoop.add(key)
+    }
+
+    const toast = document.createElement('div')
+    toast.className = 'vw-notif-toast'
+
+    const icon = normalizeIcon(iconHtml || defaultIconHtml, type)
+
+    toast.innerHTML = `
+      <div class="vw-notif-content">
+        <div class="vw-notif-icon">${icon}</div>
+        <div class="vw-notif-text">
+          <div class="vw-notif-title">${String(title)}</div>
+          <div class="vw-notif-message">${String(message)}</div>
         </div>
-        <div class="vw-notif-bar" style="animation-duration:${timeout}ms;"></div>
-      `
-      container.appendChild(toast)
+      </div>
+      <div class="vw-notif-bar" style="animation-duration:${timeout}ms;"></div>
+    `
 
-      const hide = () => {
-        toast.style.animation = 'vw-fade-out 0.5s ease-in forwards'
-        setTimeout(() => toast.remove(), 500)
-      }
+    container.appendChild(toast)
 
-      setTimeout(() => {
-        hide()
-        shown.delete(id)
-      }, timeout)
-    })
+    const cleanup = () => {
+      try {
+        toast.remove()
+      } catch (_) {}
+      if (!loopLike) shownNonLoop.delete(key)
+    }
+
+    setTimeout(() => {
+      toast.classList.add('vw-toast-out')
+      setTimeout(cleanup, 420)
+    }, timeout)
   }
 
   function setDefaultIconHtml(html) {
     defaultIconHtml = String(html || '')
   }
 
-  function startLoop(items) {
-    loopItems = Array.isArray(items) ? items.filter(Boolean) : []
-    loopIndex = 0
+  function startLoop() {
+    if (loopStarted) return
+    loopStarted = true
 
-    if (loopTimer) {
-      clearInterval(loopTimer)
-      loopTimer = null
-    }
-    if (!loopItems.length) return
+    const discordIcon = '<img src="https://assets-global.website-files.com/6257adef93867e56f84d3092/636e0a6a49cf127bf92de1e2_icon_clyde_blurple_RGB.png">'
+    const crownIcon = '<span>👑</span>'
+    const linkIcon = '<span>🔗</span>'
+
+    let step = 0
+    let siteIndex = 0
 
     const tick = () => {
-      const item = loopItems[loopIndex % loopItems.length]
-      loopIndex++
-      show(item.title || 'VortixWorld Bypass', item.message || '', item.type || 'info', LOOP_MS, item.iconHtml)
+      if (!loopStarted) return
+
+      if (step === 0) show('VortixWorld Bypass', 'Active & Ready', 'info', DISPLAY_MS, defaultIconHtml || '<span>V</span>')
+      if (step === 1) {
+        const site = MATCH_HOSTS_SORTED[siteIndex % MATCH_HOSTS_SORTED.length]
+        siteIndex++
+        show('Supported Site', site, 'info', DISPLAY_MS, linkIcon)
+      }
+      if (step === 2) show('Join Discord', 'https://discord.gg/vortex-x-sideload-bypass-1355388445509288047', 'info', DISPLAY_MS, discordIcon)
+      if (step === 3) show('Created By', 'afk.l0l', 'info', DISPLAY_MS, crownIcon)
+
+      step = (step + 1) % 4
+      loopTimer = setTimeout(tick, DISPLAY_MS + GAP_MS)
     }
 
-    tick()
-    loopTimer = setInterval(tick, LOOP_MS)
+    loopTimer = setTimeout(tick, 900)
   }
 
   function stopLoop() {
-    if (loopTimer) clearInterval(loopTimer)
-    loopTimer = null
+    loopStarted = false
+    if (loopTimer) {
+      clearTimeout(loopTimer)
+      loopTimer = null
+    }
   }
 
   window.VW_Notifications = { show, setDefaultIconHtml, startLoop, stopLoop }
