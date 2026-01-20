@@ -41,83 +41,54 @@
 @keyframes vw-toast-in{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
 `
 
-  const keys = {
-    lootlinkLocal: 'vw_lootlink_local',
-    redirectWaitTime: 'vw_redirect_wait_time',
-    luarmorWaitTime: 'vw_luarmor_wait_time'
-  }
-
-  const CONFIG_EXPORT_KEY = 'vw_config_export_v1'
-  const BC_NAME = 'vw_settings_bc'
-
   function hasGM() {
-    return typeof GM_getValue === 'function' && typeof GM_setValue === 'function'
+    return typeof GM_getValue !== 'undefined' && typeof GM_setValue !== 'undefined'
   }
 
   function getStoredValue(key, defaultValue) {
-    if (hasGM()) {
-      return GM_getValue(key, defaultValue)
+    try {
+      if (hasGM()) {
+        return GM_getValue(key, defaultValue)
+      }
+      const lsValue = localStorage.getItem(key)
+      if (lsValue === null) return defaultValue
+      if (typeof defaultValue === 'boolean') return lsValue === 'true'
+      if (typeof defaultValue === 'number') {
+        const n = parseInt(lsValue, 10)
+        return Number.isFinite(n) ? n : defaultValue
+      }
+      return lsValue
+    } catch (e) {
+      return defaultValue
     }
-    const lsValue = localStorage.getItem(key)
-    if (lsValue === null) return defaultValue
-    if (typeof defaultValue === 'boolean') return lsValue === 'true'
-    if (typeof defaultValue === 'number') {
-      const n = parseInt(lsValue, 10)
-      return Number.isFinite(n) ? n : defaultValue
-    }
-    return lsValue
   }
 
   function setStoredValue(key, value) {
-    if (hasGM()) GM_setValue(key, value)
-    localStorage.setItem(key, String(value))
-  }
-
-  function clampInt(value, min, max, def) {
-    const n = parseInt(String(value), 10)
-    if (!Number.isFinite(n)) return def
-    return Math.min(max, Math.max(min, n))
-  }
-
-  function getCurrentConfigFromStorage() {
-    return {
-      keys: keys,
-      lootlinkLocal: !!getStoredValue(keys.lootlinkLocal, true),
-      redirectWaitTime: clampInt(getStoredValue(keys.redirectWaitTime, 5), 0, 60, 5),
-      luarmorWaitTime: clampInt(getStoredValue(keys.luarmorWaitTime, 20), 0, 120, 20)
+    try {
+      if (hasGM()) {
+        GM_setValue(key, value)
+      }
+      localStorage.setItem(key, String(value))
+      
+      if (window.VW_CONFIG) {
+        if (key === 'vw_lootlink_local') window.VW_CONFIG.lootlinkLocal = value
+        if (key === 'vw_redirect_wait_time') window.VW_CONFIG.redirectWaitTime = value
+        if (key === 'vw_luarmor_wait_time') window.VW_CONFIG.luarmorWaitTime = value
+      }
+      
+      try {
+        window.dispatchEvent(new CustomEvent('vw-settings-changed', {
+          detail: { key, value }
+        }))
+      } catch (e) {}
+      
+      return true
+    } catch (e) {
+      return false
     }
   }
 
-  function exportConfigToWindowAndStorage() {
-    const cfg = getCurrentConfigFromStorage()
-    window.VW_CONFIG = window.VW_CONFIG || {}
-    window.VW_CONFIG.keys = keys
-    window.VW_CONFIG.lootlinkLocal = cfg.lootlinkLocal
-    window.VW_CONFIG.redirectWaitTime = cfg.redirectWaitTime
-    window.VW_CONFIG.luarmorWaitTime = cfg.luarmorWaitTime
-    try {
-      localStorage.setItem(CONFIG_EXPORT_KEY, JSON.stringify(cfg))
-    } catch (_) {}
-    try {
-      if (typeof BroadcastChannel === 'function') {
-        const bc = new BroadcastChannel(BC_NAME)
-        bc.postMessage({ t: 'vw_settings_update', cfg })
-        bc.close()
-      }
-    } catch (_) {}
-  }
-
-  function importExportedConfigIfNeeded() {
-    try {
-      const raw = localStorage.getItem(CONFIG_EXPORT_KEY)
-      if (!raw) return
-      const cfg = JSON.parse(raw)
-      if (!cfg) return
-      if (typeof cfg.lootlinkLocal === 'boolean') setStoredValue(keys.lootlinkLocal, cfg.lootlinkLocal)
-      if (typeof cfg.redirectWaitTime === 'number') setStoredValue(keys.redirectWaitTime, clampInt(cfg.redirectWaitTime, 0, 60, 5))
-      if (typeof cfg.luarmorWaitTime === 'number') setStoredValue(keys.luarmorWaitTime, clampInt(cfg.luarmorWaitTime, 0, 120, 20))
-    } catch (_) {}
-  }
+  window.VW_Storage = { get: getStoredValue, set: setStoredValue }
 
   function createSettingsUI() {
     const existing = document.getElementById(VW_SETTINGS_ID)
@@ -191,10 +162,11 @@
     const applyBtn = shadow.querySelector('#vwApplyBtn')
     const reloadBtn = shadow.querySelector('#vwReloadBtn')
 
+    lootlinkToggle.checked = getStoredValue('vw_lootlink_local', true)
+    waitTimeInput.value = getStoredValue('vw_redirect_wait_time', 5)
+    luarmorWaitTimeInput.value = getStoredValue('vw_luarmor_wait_time', 20)
+
     function openPanel() {
-      lootlinkToggle.checked = !!getStoredValue(keys.lootlinkLocal, true)
-      waitTimeInput.value = String(clampInt(getStoredValue(keys.redirectWaitTime, 5), 0, 60, 5))
-      luarmorWaitTimeInput.value = String(clampInt(getStoredValue(keys.luarmorWaitTime, 20), 0, 120, 20))
       backdrop.classList.add('open')
     }
 
@@ -224,17 +196,23 @@
       e.preventDefault()
       e.stopPropagation()
 
-      const newLootlink = !!lootlinkToggle.checked
-      const newWaitTime = clampInt(waitTimeInput.value, 0, 60, 5)
-      const newLuarmorWaitTime = clampInt(luarmorWaitTimeInput.value, 0, 120, 20)
+      const newLootlink = lootlinkToggle.checked
+      const newWaitTime = parseInt(waitTimeInput.value) || 5
+      const newLuarmorWaitTime = parseInt(luarmorWaitTimeInput.value) || 20
 
-      setStoredValue(keys.lootlinkLocal, newLootlink)
-      setStoredValue(keys.redirectWaitTime, newWaitTime)
-      setStoredValue(keys.luarmorWaitTime, newLuarmorWaitTime)
+      const clampedWaitTime = Math.max(0, Math.min(60, newWaitTime))
+      const clampedLuarmorWaitTime = Math.max(0, Math.min(120, newLuarmorWaitTime))
 
-      exportConfigToWindowAndStorage()
+      const saved1 = setStoredValue('vw_lootlink_local', newLootlink)
+      const saved2 = setStoredValue('vw_redirect_wait_time', clampedWaitTime)
+      const saved3 = setStoredValue('vw_luarmor_wait_time', clampedLuarmorWaitTime)
 
-      showToast(shadow, hasGM() ? '✓ Settings saved globally!' : '✓ Settings saved across pages!')
+      if (saved1 && saved2 && saved3) {
+        showToast(shadow, '✓ Settings saved globally!')
+      } else {
+        showToast(shadow, '⚠️ Settings saved locally only')
+      }
+      
       closePanel()
     })
 
@@ -260,45 +238,11 @@
   }
 
   function init() {
-    importExportedConfigIfNeeded()
-    exportConfigToWindowAndStorage()
-
-    try {
-      if (typeof BroadcastChannel === 'function') {
-        const bc = new BroadcastChannel(BC_NAME)
-        bc.onmessage = (ev) => {
-          try {
-            const data = ev && ev.data
-            if (!data || data.t !== 'vw_settings_update' || !data.cfg) return
-            const cfg = data.cfg
-            if (typeof cfg.lootlinkLocal === 'boolean') setStoredValue(keys.lootlinkLocal, cfg.lootlinkLocal)
-            if (typeof cfg.redirectWaitTime === 'number') setStoredValue(keys.redirectWaitTime, clampInt(cfg.redirectWaitTime, 0, 60, 5))
-            if (typeof cfg.luarmorWaitTime === 'number') setStoredValue(keys.luarmorWaitTime, clampInt(cfg.luarmorWaitTime, 0, 120, 20))
-            exportConfigToWindowAndStorage()
-          } catch (_) {}
-        }
-        setTimeout(() => {
-          try { bc.close() } catch (_) {}
-        }, 600000)
-      }
-    } catch (_) {}
-
     createSettingsUI()
     const observer = new MutationObserver(() => {
       if (!document.getElementById(VW_SETTINGS_ID)) createSettingsUI()
     })
     observer.observe(document.documentElement, { childList: true, subtree: true })
-    setInterval(() => {
-      if (!document.getElementById(VW_SETTINGS_ID)) createSettingsUI()
-    }, 2000)
-
-    window.addEventListener('storage', (e) => {
-      if (!e) return
-      if (e.key === keys.redirectWaitTime || e.key === keys.luarmorWaitTime || e.key === keys.lootlinkLocal || e.key === CONFIG_EXPORT_KEY) {
-        importExportedConfigIfNeeded()
-        exportConfigToWindowAndStorage()
-      }
-    })
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init)
