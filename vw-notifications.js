@@ -3,9 +3,8 @@
   const STYLE_ID = 'vwNotificationStyles'
   const CONTAINER_ID = 'vwNotificationContainer'
   const BYPASS_HOST = 'vortix-world-bypass.vercel.app'
-  const DISPLAY_MS = 3500
-  const BAR_MS = 3500
-  const GAP_MS = 250
+  const DEFAULT_DISPLAY_MS = 3500
+  const DEFAULT_GAP_MS = 250
   const shownNonLoop = new Set()
   const queue = []
   const MATCH_HOSTS_SORTED = [
@@ -40,6 +39,7 @@
   let loopStarted = false
   let loopTimer = null
   let initDone = false
+  let loopBusy = false
   const CSS = `
 #${CONTAINER_ID}{
   position:fixed !important;
@@ -166,6 +166,13 @@
     if (type === 'error') return '<span>❌</span>'
     return '<span>ℹ️</span>'
   }
+  function removeToast(el) {
+    try {
+      if (!el) return
+      el.classList.add('vw-toast-out')
+      setTimeout(() => { try { el.remove() } catch (_) {} }, 260)
+    } catch (_) {}
+  }
   function renderToast(title, message, type, timeout, iconHtml) {
     if (String(title).includes('Unsupported Site') && hostIsIgnoredForUnsupported()) return
     ensureStyles()
@@ -179,14 +186,32 @@
     if (!loopLike) {
       if (shownNonLoop.has(key)) return
       shownNonLoop.add(key)
-    } else {
-      const existing = Array.from(container.querySelectorAll('.vw-notif-toast'))
-      existing.forEach(t => {
-        try {
-          t.classList.add('vw-toast-out')
-          setTimeout(() => { try { t.remove() } catch (_) {} }, 250)
-        } catch (_) {}
-      })
+    }
+    timeout = Number.isFinite(timeout) ? Math.max(0, timeout) : DEFAULT_DISPLAY_MS
+    const barDuration = Math.max(300, timeout)
+    if (!loopLike) {
+      const toast = document.createElement('div')
+      toast.className = 'vw-notif-toast'
+      const icon = normalizeIcon(iconHtml || defaultIconHtml, type)
+      toast.innerHTML = `
+      <div class="vw-notif-content">
+        <div class="vw-notif-icon">${icon}</div>
+        <div class="vw-notif-text">
+          <div class="vw-notif-title">${String(title)}</div>
+          <div class="vw-notif-message">${String(message)}</div>
+        </div>
+      </div>
+      <div class="vw-notif-bar" style="animation-duration:${barDuration}ms;"></div>
+    `
+      container.appendChild(toast)
+      setTimeout(() => removeToast(toast), timeout)
+      setTimeout(() => { try { shownNonLoop.delete(key) } catch (_) {} }, timeout + 300)
+      return
+    }
+    const existing = container.querySelector('.vw-notif-toast')
+    if (existing) {
+      queue.push({ title, message, type, timeout, iconHtml })
+      return
     }
     const toast = document.createElement('div')
     toast.className = 'vw-notif-toast'
@@ -199,23 +224,25 @@
           <div class="vw-notif-message">${String(message)}</div>
         </div>
       </div>
-      <div class="vw-notif-bar" style="animation-duration:${BAR_MS}ms;"></div>
+      <div class="vw-notif-bar" style="animation-duration:${barDuration}ms;"></div>
     `
     container.appendChild(toast)
-    const cleanup = () => {
-      try {
-        toast.classList.add('vw-toast-out')
-        setTimeout(() => { try { toast.remove() } catch (_) {} }, 250)
-      } catch (_) {}
-      if (!loopLike) shownNonLoop.delete(key)
-    }
-    setTimeout(cleanup, DISPLAY_MS)
+    setTimeout(() => {
+      removeToast(toast)
+      setTimeout(() => {
+        const next = queue.shift()
+        if (next) {
+          setTimeout(() => renderToast(next.title, next.message, next.type, next.timeout, next.iconHtml), DEFAULT_GAP_MS)
+        }
+      }, 300)
+    }, timeout)
   }
   function flushQueue() {
     if (!initDone) return
-    while (queue.length) {
+    while (queue.length && !document.getElementById(CONTAINER_ID).querySelector('.vw-notif-toast')) {
       const x = queue.shift()
       renderToast(x.title, x.message, x.type, x.timeout, x.iconHtml)
+      break
     }
   }
   function init() {
@@ -226,7 +253,7 @@
     flushQueue()
     try { startLoop() } catch (_) {}
   }
-  function show(title, message, type = 'info', timeout = DISPLAY_MS, iconHtml) {
+  function show(title, message, type = 'info', timeout = DEFAULT_DISPLAY_MS, iconHtml) {
     const payload = { title, message, type, timeout, iconHtml }
     if (!document.documentElement) {
       queue.push(payload)
@@ -254,18 +281,20 @@
     const tick = () => {
       if (!loopStarted) return
       if (step === 0) {
-        show('VortixWorld Bypass', 'Active & Ready', 'info', DISPLAY_MS, defaultIconHtml || '<span>V</span>')
+        renderToast('VortixWorld Bypass', 'Active & Ready', 'info', DEFAULT_DISPLAY_MS, defaultIconHtml || '<span>V</span>')
       } else if (step === 1) {
         const site = MATCH_HOSTS_SORTED[siteIndex % MATCH_HOSTS_SORTED.length]
         siteIndex++
-        show('Supported Site', site, 'info', DISPLAY_MS, linkIcon)
+        renderToast('Supported Site', site, 'info', DEFAULT_DISPLAY_MS, linkIcon)
       } else if (step === 2) {
-        show('Join Discord', 'https://discord.gg/vortex-x-sideload-bypass-1355388445509288047', 'info', DISPLAY_MS, discordIcon)
+        renderToast('Join Discord', 'https://discord.gg/vortex-x-sideload-bypass-1355388445509288047', 'info', DEFAULT_DISPLAY_MS, discordIcon)
       } else if (step === 3) {
-        show('Created By', 'afk.l0l', 'info', DISPLAY_MS, crownIcon)
+        renderToast('Created By', 'afk.l0l', 'info', DEFAULT_DISPLAY_MS, crownIcon)
       }
       step = (step + 1) % 4
-      loopTimer = setTimeout(tick, DISPLAY_MS + GAP_MS)
+      loopTimer = setTimeout(() => {
+        tick()
+      }, DEFAULT_DISPLAY_MS + DEFAULT_GAP_MS)
     }
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => setTimeout(tick, 900), { once: true })
     else setTimeout(tick, 900)
