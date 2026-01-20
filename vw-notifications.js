@@ -7,6 +7,7 @@
   const DISPLAY_MS = 3500
   const GAP_MS = 250
   const shownNonLoop = new Set()
+  const queue = []
 
   const MATCH_HOSTS_SORTED = [
     'airflowscript.com',
@@ -40,6 +41,7 @@
   let defaultIconHtml = ''
   let loopStarted = false
   let loopTimer = null
+  let initDone = false
 
   const CSS = `
 #${CONTAINER_ID}{
@@ -172,14 +174,8 @@
     return '<span>ℹ️</span>'
   }
 
-  function show(title, message, type = 'info', timeout = DISPLAY_MS, iconHtml) {
-    if (!document.body) {
-      document.addEventListener('DOMContentLoaded', () => show(title, message, type, timeout, iconHtml), { once: true })
-      return
-    }
-
+  function renderToast(title, message, type, timeout, iconHtml) {
     if (String(title).includes('Unsupported Site') && hostIsIgnoredForUnsupported()) return
-
     ensureStyles()
     const container = ensureContainer()
 
@@ -226,6 +222,37 @@
     }, timeout)
   }
 
+  function flushQueue() {
+    if (!initDone) return
+    while (queue.length) {
+      const x = queue.shift()
+      renderToast(x.title, x.message, x.type, x.timeout, x.iconHtml)
+    }
+  }
+
+  function init() {
+    if (initDone) return
+    initDone = true
+    ensureStyles()
+    ensureContainer()
+    flushQueue()
+  }
+
+  function show(title, message, type = 'info', timeout = DISPLAY_MS, iconHtml) {
+    const payload = { title, message, type, timeout, iconHtml }
+    if (!document.documentElement) {
+      queue.push(payload)
+      return
+    }
+    if (!initDone) {
+      queue.push(payload)
+      if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init, { once: true })
+      else init()
+      return
+    }
+    renderToast(title, message, type, timeout, iconHtml)
+  }
+
   function setDefaultIconHtml(html) {
     defaultIconHtml = String(html || '')
   }
@@ -257,7 +284,8 @@
       loopTimer = setTimeout(tick, DISPLAY_MS + GAP_MS)
     }
 
-    loopTimer = setTimeout(tick, 900)
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => setTimeout(tick, 900), { once: true })
+    else setTimeout(tick, 900)
   }
 
   function stopLoop() {
@@ -267,6 +295,9 @@
       loopTimer = null
     }
   }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init, { once: true })
+  else init()
 
   window.VW_Notifications = { show, setDefaultIconHtml, startLoop, stopLoop }
 })()
