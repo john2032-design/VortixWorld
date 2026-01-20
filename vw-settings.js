@@ -2,6 +2,7 @@
   'use strict'
   if (window.top !== window.self) return
   const VW_SETTINGS_ID = 'vw-settings-shadow-host'
+  const SETTINGS_STORE_KEY = 'vw_settings_v1'
   const SETTINGS_CSS = `
 *{margin:0;padding:0;box-sizing:border-box;}
 :host{all:initial;position:fixed !important;bottom:14px !important;left:14px !important;z-index:2147483647 !important;pointer-events:none !important;}
@@ -45,47 +46,71 @@
   function hasGM() {
     return typeof GM_getValue === 'function' && typeof GM_setValue === 'function'
   }
-  function getStoredValue(key, defaultValue) {
+  function readRawSettings() {
     if (hasGM()) {
       try {
-        const v = GM_getValue(key)
-        if (typeof v !== 'undefined') return v
+        const raw = GM_getValue(SETTINGS_STORE_KEY)
+        if (raw) return typeof raw === 'object' ? raw : JSON.parse(String(raw))
       } catch (_) {}
     }
     try {
-      const lsValue = localStorage.getItem(key)
-      if (lsValue === null) return defaultValue
-      if (typeof defaultValue === 'boolean') return lsValue === 'true'
-      if (typeof defaultValue === 'number') {
-        const n = parseInt(lsValue, 10)
-        return Number.isFinite(n) ? n : defaultValue
-      }
-      return lsValue
-    } catch (_) {
-      return defaultValue
+      const s = localStorage.getItem(SETTINGS_STORE_KEY)
+      if (s) return JSON.parse(s)
+    } catch (_) {}
+    const fallback = {}
+    try {
+      const l = localStorage.getItem(keys.lootlinkLocal)
+      if (l !== null) fallback.lootlinkLocal = l === 'true'
+    } catch (_) {}
+    try {
+      const r = localStorage.getItem(keys.redirectWaitTime)
+      if (r !== null) fallback.redirectWaitTime = parseInt(r, 10)
+    } catch (_) {}
+    try {
+      const lu = localStorage.getItem(keys.luarmorWaitTime)
+      if (lu !== null) fallback.luarmorWaitTime = parseInt(lu, 10)
+    } catch (_) {}
+    return Object.keys(fallback).length ? fallback : null
+  }
+  function getSettings() {
+    const raw = readRawSettings()
+    const defaults = { lootlinkLocal: true, redirectWaitTime: 5, luarmorWaitTime: 20 }
+    if (!raw) return defaults
+    return {
+      lootlinkLocal: typeof raw.lootlinkLocal === 'boolean' ? raw.lootlinkLocal : defaults.lootlinkLocal,
+      redirectWaitTime: Number.isFinite(Number(raw.redirectWaitTime)) ? Number(raw.redirectWaitTime) : defaults.redirectWaitTime,
+      luarmorWaitTime: Number.isFinite(Number(raw.luarmorWaitTime)) ? Number(raw.luarmorWaitTime) : defaults.luarmorWaitTime
     }
   }
-  function setStoredValue(key, value) {
-    if (hasGM()) {
-      try { GM_setValue(key, value) } catch (_) {}
+  function writeSettings(obj, source) {
+    const cur = getSettings()
+    const merged = {
+      lootlinkLocal: typeof obj.lootlinkLocal === 'boolean' ? obj.lootlinkLocal : cur.lootlinkLocal,
+      redirectWaitTime: Number.isFinite(Number(obj.redirectWaitTime)) ? Number(obj.redirectWaitTime) : cur.redirectWaitTime,
+      luarmorWaitTime: Number.isFinite(Number(obj.luarmorWaitTime)) ? Number(obj.luarmorWaitTime) : cur.luarmorWaitTime
     }
-    try { localStorage.setItem(key, String(value)) } catch (_) {}
-    try { sessionStorage.setItem(key, String(value)) } catch (_) {}
     try {
-      if (typeof BroadcastChannel !== 'undefined') {
-        try {
-          const bc = new BroadcastChannel('vortixworld-settings')
-          bc.postMessage({ key, value })
-          bc.close()
-        } catch (_) {}
+      if (hasGM()) {
+        try { GM_setValue(SETTINGS_STORE_KEY, merged) } catch (_) {}
       }
     } catch (_) {}
+    try { localStorage.setItem(SETTINGS_STORE_KEY, JSON.stringify(merged)) } catch (_) {}
+    try { localStorage.setItem(keys.lootlinkLocal, String(merged.lootlinkLocal)) } catch (_) {}
+    try { localStorage.setItem(keys.redirectWaitTime, String(merged.redirectWaitTime)) } catch (_) {}
+    try { localStorage.setItem(keys.luarmorWaitTime, String(merged.luarmorWaitTime)) } catch (_) {}
+    try { sessionStorage.setItem(keys.lootlinkLocal, String(merged.lootlinkLocal)) } catch (_) {}
+    try { sessionStorage.setItem(keys.redirectWaitTime, String(merged.redirectWaitTime)) } catch (_) {}
+    try { sessionStorage.setItem(keys.luarmorWaitTime, String(merged.luarmorWaitTime)) } catch (_) {}
     try {
-      window.dispatchEvent(new CustomEvent('vw-settings-updated', { detail: { [key]: value } }))
+      if (typeof BroadcastChannel !== 'undefined') {
+        const bc = new BroadcastChannel('vortixworld-settings')
+        try { bc.postMessage({ type: 'update', source: source || 'vw-settings-ui', payload: merged }) } catch (_) {}
+        try { bc.close() } catch (_) {}
+      }
     } catch (_) {}
-    try {
-      window.postMessage({ source: 'vortixworld-settings', type: 'VW_SETTING_CHANGED', payload: { key, value } }, '*')
-    } catch (_) {}
+    try { window.postMessage({ source: 'vortixworld-settings', type: 'update', payload: merged, originator: source || 'vw-settings-ui' }, '*') } catch (_) {}
+    try { window.dispatchEvent(new CustomEvent('vw-settings-updated', { detail: merged })) } catch (_) {}
+    return merged
   }
   function clampInt(value, min, max, def) {
     const n = parseInt(String(value), 10)
@@ -154,10 +179,14 @@
     const luarmorWaitTimeInput = shadow.querySelector('#vwLuarmorWaitTimeInput')
     const applyBtn = shadow.querySelector('#vwApplyBtn')
     const reloadBtn = shadow.querySelector('#vwReloadBtn')
+    function populateUI() {
+      const s = getSettings()
+      lootlinkToggle.checked = !!s.lootlinkLocal
+      waitTimeInput.value = String(clampInt(s.redirectWaitTime, 0, 60, 5))
+      luarmorWaitTimeInput.value = String(clampInt(s.luarmorWaitTime, 0, 120, 20))
+    }
     function openPanel() {
-      lootlinkToggle.checked = !!getStoredValue(keys.lootlinkLocal, true)
-      waitTimeInput.value = String(clampInt(getStoredValue(keys.redirectWaitTime, 5), 0, 60, 5))
-      luarmorWaitTimeInput.value = String(clampInt(getStoredValue(keys.luarmorWaitTime, 20), 0, 120, 20))
+      populateUI()
       backdrop.classList.add('open')
     }
     function closePanel() {
@@ -183,44 +212,12 @@
       const newLootlink = !!lootlinkToggle.checked
       const newWaitTime = clampInt(waitTimeInput.value, 0, 60, 5)
       const newLuarmorWaitTime = clampInt(luarmorWaitTimeInput.value, 0, 120, 20)
-      setStoredValue(keys.lootlinkLocal, newLootlink)
-      setStoredValue(keys.redirectWaitTime, newWaitTime)
-      setStoredValue(keys.luarmorWaitTime, newLuarmorWaitTime)
+      const merged = writeSettings({ lootlinkLocal: newLootlink, redirectWaitTime: newWaitTime, luarmorWaitTime: newLuarmorWaitTime }, 'vw-settings-ui')
       try {
-        if (window.VW_CONFIG && typeof window.VW_CONFIG === 'object') {
-          window.VW_CONFIG.lootlinkLocal = newLootlink
-          window.VW_CONFIG.redirectWaitTime = newWaitTime
-          window.VW_CONFIG.luarmorWaitTime = newLuarmorWaitTime
-        } else {
-          try { window.VW_CONFIG = { lootlinkLocal: newLootlink, redirectWaitTime: newWaitTime, luarmorWaitTime: newLuarmorWaitTime } } catch (_) {}
-        }
+        window.dispatchEvent(new CustomEvent('vw-settings-updated', { detail: merged }))
       } catch (_) {}
       try {
-        window.dispatchEvent(new CustomEvent('vw-settings-updated', {
-          detail: {
-            lootlinkLocal: newLootlink,
-            redirectWaitTime: newWaitTime,
-            luarmorWaitTime: newLuarmorWaitTime
-          }
-        }))
-      } catch (_) {}
-      try {
-        window.postMessage({
-          source: 'vortixworld-settings',
-          type: 'VW_SETTINGS_UPDATED',
-          payload: {
-            lootlinkLocal: newLootlink,
-            redirectWaitTime: newWaitTime,
-            luarmorWaitTime: newLuarmorWaitTime
-          }
-        }, '*')
-      } catch (_) {}
-      try {
-        if (typeof BroadcastChannel !== 'undefined') {
-          const bc = new BroadcastChannel('vortixworld-settings')
-          bc.postMessage({ lootlinkLocal: newLootlink, redirectWaitTime: newWaitTime, luarmorWaitTime: newLuarmorWaitTime })
-          bc.close()
-        }
+        window.postMessage({ source: 'vortixworld-settings', type: 'VW_SETTINGS_UPDATED', payload: merged, originator: 'vw-settings-ui' }, '*')
       } catch (_) {}
       showToast(shadow, hasGM() ? '✓ Settings saved globally!' : '✓ Settings saved (localStorage)!')
       closePanel()
@@ -259,13 +256,13 @@
     window.addEventListener('message', (ev) => {
       if (!ev.data || ev.data.source !== 'vortixworld-settings') return
       const p = ev.data.payload || {}
+      const originator = ev.data.originator || ev.data.origin || ''
+      if (originator === 'vw-settings-ui') return
       try {
-        if (typeof p.lootlinkLocal !== 'undefined') setStoredValue(keys.lootlinkLocal, !!p.lootlinkLocal)
-        if (typeof p.redirectWaitTime === 'number') setStoredValue(keys.redirectWaitTime, p.redirectWaitTime)
-        if (typeof p.luarmorWaitTime === 'number') setStoredValue(keys.luarmorWaitTime, p.luarmorWaitTime)
-        try {
-          window.dispatchEvent(new CustomEvent('vw-settings-updated', { detail: p }))
-        } catch (_) {}
+        if (typeof p.lootlinkLocal !== 'undefined' || typeof p.redirectWaitTime !== 'undefined' || typeof p.luarmorWaitTime !== 'undefined') {
+          writeSettings({ lootlinkLocal: p.lootlinkLocal, redirectWaitTime: p.redirectWaitTime, luarmorWaitTime: p.luarmorWaitTime }, 'external')
+          try { window.dispatchEvent(new CustomEvent('vw-settings-updated', { detail: getSettings() })) } catch (_) {}
+        }
       } catch (_) {}
     })
   } catch (_) {}
@@ -273,15 +270,12 @@
     if (typeof BroadcastChannel !== 'undefined') {
       const bc = new BroadcastChannel('vortixworld-settings')
       bc.addEventListener('message', (ev) => {
-        const p = ev.data || {}
-        try {
-          if (typeof p.lootlinkLocal !== 'undefined') setStoredValue(keys.lootlinkLocal, !!p.lootlinkLocal)
-          if (typeof p.redirectWaitTime === 'number') setStoredValue(keys.redirectWaitTime, p.redirectWaitTime)
-          if (typeof p.luarmorWaitTime === 'number') setStoredValue(keys.luarmorWaitTime, p.luarmorWaitTime)
-          try {
-            window.dispatchEvent(new CustomEvent('vw-settings-updated', { detail: p }))
-          } catch (_) {}
-        } catch (_) {}
+        const m = ev.data || {}
+        if (m && m.type === 'update' && m.source !== 'vw-settings-ui') {
+          const p = m.payload || {}
+          writeSettings({ lootlinkLocal: p.lootlinkLocal, redirectWaitTime: p.redirectWaitTime, luarmorWaitTime: p.luarmorWaitTime }, 'bc-external')
+          try { window.dispatchEvent(new CustomEvent('vw-settings-updated', { detail: getSettings() })) } catch (_) {}
+        }
       })
     }
   } catch (_) {}
