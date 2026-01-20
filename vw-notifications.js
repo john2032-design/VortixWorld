@@ -119,7 +119,7 @@
   width:100% !important;
   background:linear-gradient(90deg,#0f1b4f,#1e2be8) !important;
   transform-origin:left center !important;
-  animation:vw-bar ${BAR_MS}ms linear forwards !important;
+  animation:vw-bar linear forwards !important;
 }
 .vw-toast-out{
   animation:vw-toast-out 250ms cubic-bezier(0.4,0,0.2,1) forwards !important;
@@ -177,15 +177,10 @@
 
   function renderToast(title, message, type, timeout, iconHtml) {
     if (String(title).includes('Unsupported Site') && hostIsIgnoredForUnsupported()) return
-    
     ensureStyles()
     const container = ensureContainer()
 
-    const loopLike =
-      String(title) === 'VortixWorld Bypass' ||
-      String(title) === 'Supported Site' ||
-      String(title) === 'Join Discord' ||
-      String(title) === 'Created By'
+    const loopLike = String(title) === 'VortixWorld Bypass'
 
     const key = `${title}::${message}::${type}`
     if (!loopLike) {
@@ -206,7 +201,7 @@
           <div class="vw-notif-message">${String(message)}</div>
         </div>
       </div>
-      <div class="vw-notif-bar"></div>
+      <div class="vw-notif-bar" style="animation-duration:${BAR_MS}ms;"></div>
     `
 
     container.appendChild(toast)
@@ -264,30 +259,36 @@
     loopStarted = true
 
     const discordIcon = '<img src="https://assets-global.website-files.com/6257adef93867e56f84d3092/636e0a6a49cf127bf92de1e2_icon_clyde_blurple_RGB.png">'
-    const crownIcon = '<span>👑</span>'
-    const linkIcon = '<span>🔗</span>'
+    const vwIcon = defaultIconHtml || '<span>V</span>'
 
-    let step = 0
-    let siteIndex = 0
+    const steps = {
+      stepIndex: 0,
+      siteIndex: 0
+    }
+
+    const messages = () => {
+      const site = MATCH_HOSTS_SORTED[steps.siteIndex % MATCH_HOSTS_SORTED.length]
+      return [
+        { title: 'VortixWorld Bypass', message: 'VortixWorld Bypass', icon: vwIcon },
+        { title: 'VortixWorld Bypass', message: `🔗${site}`, icon: '<span>🔗</span>' },
+        { title: 'VortixWorld Bypass', message: 'https://discord.gg/vortex-x-sideload-bypass-1355388445509288047', icon: discordIcon },
+        { title: 'VortixWorld Bypass', message: '👑Created By afk.l0l', icon: '<span>👑</span>' }
+      ]
+    }
 
     const tick = () => {
       if (!loopStarted) return
-
-      if (step === 0) show('VortixWorld Bypass', 'Active & Ready', 'info', DISPLAY_MS, defaultIconHtml || '<span>V</span>')
-      if (step === 1) {
-        const site = MATCH_HOSTS_SORTED[siteIndex % MATCH_HOSTS_SORTED.length]
-        siteIndex++
-        show('Supported Site', site, 'info', DISPLAY_MS, linkIcon)
-      }
-      if (step === 2) show('Join Discord', 'https://discord.gg/vortex-x-sideload-bypass-1355388445509288047', 'info', DISPLAY_MS, discordIcon)
-      if (step === 3) show('Created By', 'afk.l0l', 'info', DISPLAY_MS, crownIcon)
-
-      step = (step + 1) % 4
-      loopTimer = setTimeout(tick, DISPLAY_MS + GAP_MS)
+      const arr = messages()
+      if (steps.stepIndex === 1) steps.siteIndex++
+      const cur = arr[steps.stepIndex]
+      show(cur.title, cur.message, 'info', DISPLAY_MS, cur.icon)
+      steps.stepIndex = (steps.stepIndex + 1) % arr.length
+      loopTimer = setTimeout(tick, DISPLAY_MS + 250 + GAP_MS)
     }
 
-    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => setTimeout(tick, 900), { once: true })
-    else setTimeout(tick, 900)
+    const start = () => setTimeout(tick, 900)
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start, { once: true })
+    else start()
   }
 
   function stopLoop() {
