@@ -1,3 +1,16 @@
+// ==UserScript==
+// @name         VortixWorld Settings
+// @namespace    afklolbypasser
+// @version      1.1
+// @description  Settings panel for VortixWorld Userscript
+// @author       afk.l0l
+// @match        *://*/*
+// @grant        GM_getValue
+// @grant        GM_setValue
+// @run-at       document-start
+// @license      MIT
+// ==/UserScript==
+
 ;(function () {
   'use strict'
 
@@ -38,57 +51,44 @@
 .vw-btn-primary{background:linear-gradient(90deg,#0f1b4f,#1e2be8) !important;border:1px solid rgba(255,255,255,0.14) !important;}
 .vw-btn-primary:hover{background:linear-gradient(90deg,#1a2a6c,#2a3bf8) !important;}
 .vw-toast{position:fixed !important;bottom:70px !important;left:14px !important;padding:10px 16px !important;border-radius:10px !important;background:linear-gradient(90deg,#0f1b4f,#1e2be8) !important;color:#cfd6e6 !important;font-weight:900 !important;font-size:13px !important;box-shadow:0 8px 32px rgba(0,0,0,0.5) !important;animation:vw-toast-in 0.3s ease-out !important;z-index:2147483647 !important;pointer-events:none !important;font-family:system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif !important;}
-@keyframes vw-toast-in{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+@keyframes vw-toast-in{from{opacity:0;transform:translateY(10px);}to{opacity:1;translateY(0);}}
 `
 
+  const keys = {
+    lootlinkLocal: 'vw_lootlink_local',
+    redirectWaitTime: 'vw_redirect_wait_time',
+    luarmorWaitTime: 'vw_luarmor_wait_time'
+  }
+
   function hasGM() {
-    return typeof GM_getValue !== 'undefined' && typeof GM_setValue !== 'undefined'
+    return typeof GM_getValue === 'function' && typeof GM_setValue === 'function'
   }
 
   function getStoredValue(key, defaultValue) {
-    try {
-      if (hasGM()) {
-        return GM_getValue(key, defaultValue)
-      }
-      const lsValue = localStorage.getItem(key)
-      if (lsValue === null) return defaultValue
-      if (typeof defaultValue === 'boolean') return lsValue === 'true'
-      if (typeof defaultValue === 'number') {
-        const n = parseInt(lsValue, 10)
-        return Number.isFinite(n) ? n : defaultValue
-      }
-      return lsValue
-    } catch (e) {
-      return defaultValue
+    if (hasGM()) {
+      const gmValue = GM_getValue(key, undefined)
+      if (gmValue !== undefined) return gmValue
     }
+    const lsValue = localStorage.getItem(key)
+    if (lsValue === null) return defaultValue
+    if (typeof defaultValue === 'boolean') return lsValue === 'true'
+    if (typeof defaultValue === 'number') {
+      const n = parseInt(lsValue, 10)
+      return Number.isFinite(n) ? n : defaultValue
+    }
+    return lsValue
   }
 
   function setStoredValue(key, value) {
-    try {
-      if (hasGM()) {
-        GM_setValue(key, value)
-      }
-      localStorage.setItem(key, String(value))
-      
-      if (window.VW_CONFIG) {
-        if (key === 'vw_lootlink_local') window.VW_CONFIG.lootlinkLocal = value
-        if (key === 'vw_redirect_wait_time') window.VW_CONFIG.redirectWaitTime = value
-        if (key === 'vw_luarmor_wait_time') window.VW_CONFIG.luarmorWaitTime = value
-      }
-      
-      try {
-        window.dispatchEvent(new CustomEvent('vw-settings-changed', {
-          detail: { key, value }
-        }))
-      } catch (e) {}
-      
-      return true
-    } catch (e) {
-      return false
-    }
+    if (hasGM()) GM_setValue(key, value)
+    localStorage.setItem(key, String(value))
   }
 
-  window.VW_Storage = { get: getStoredValue, set: setStoredValue }
+  function clampInt(value, min, max, def) {
+    const n = parseInt(String(value), 10)
+    if (!Number.isFinite(n)) return def
+    return Math.min(max, Math.max(min, n))
+  }
 
   function createSettingsUI() {
     const existing = document.getElementById(VW_SETTINGS_ID)
@@ -162,11 +162,10 @@
     const applyBtn = shadow.querySelector('#vwApplyBtn')
     const reloadBtn = shadow.querySelector('#vwReloadBtn')
 
-    lootlinkToggle.checked = getStoredValue('vw_lootlink_local', true)
-    waitTimeInput.value = getStoredValue('vw_redirect_wait_time', 5)
-    luarmorWaitTimeInput.value = getStoredValue('vw_luarmor_wait_time', 20)
-
     function openPanel() {
+      lootlinkToggle.checked = !!getStoredValue(keys.lootlinkLocal, true)
+      waitTimeInput.value = String(clampInt(getStoredValue(keys.redirectWaitTime, 5), 0, 60, 5))
+      luarmorWaitTimeInput.value = String(clampInt(getStoredValue(keys.luarmorWaitTime, 20), 0, 120, 20))
       backdrop.classList.add('open')
     }
 
@@ -196,23 +195,21 @@
       e.preventDefault()
       e.stopPropagation()
 
-      const newLootlink = lootlinkToggle.checked
-      const newWaitTime = parseInt(waitTimeInput.value) || 5
-      const newLuarmorWaitTime = parseInt(luarmorWaitTimeInput.value) || 20
+      const newLootlink = !!lootlinkToggle.checked
+      const newWaitTime = clampInt(waitTimeInput.value, 0, 60, 5)
+      const newLuarmorWaitTime = clampInt(luarmorWaitTimeInput.value, 0, 120, 20)
 
-      const clampedWaitTime = Math.max(0, Math.min(60, newWaitTime))
-      const clampedLuarmorWaitTime = Math.max(0, Math.min(120, newLuarmorWaitTime))
+      setStoredValue(keys.lootlinkLocal, newLootlink)
+      setStoredValue(keys.redirectWaitTime, newWaitTime)
+      setStoredValue(keys.luarmorWaitTime, newLuarmorWaitTime)
 
-      const saved1 = setStoredValue('vw_lootlink_local', newLootlink)
-      const saved2 = setStoredValue('vw_redirect_wait_time', clampedWaitTime)
-      const saved3 = setStoredValue('vw_luarmor_wait_time', clampedLuarmorWaitTime)
-
-      if (saved1 && saved2 && saved3) {
-        showToast(shadow, '✓ Settings saved globally!')
-      } else {
-        showToast(shadow, '⚠️ Settings saved locally only')
+      if (window.VW_CONFIG) {
+        window.VW_CONFIG.lootlinkLocal = newLootlink
+        window.VW_CONFIG.redirectWaitTime = newWaitTime
+        window.VW_CONFIG.luarmorWaitTime = newLuarmorWaitTime
       }
-      
+
+      showToast(shadow, hasGM() ? '✓ Settings saved globally!' : '✓ Settings saved (localStorage)!')
       closePanel()
     })
 
@@ -243,6 +240,9 @@
       if (!document.getElementById(VW_SETTINGS_ID)) createSettingsUI()
     })
     observer.observe(document.documentElement, { childList: true, subtree: true })
+    setInterval(() => {
+      if (!document.getElementById(VW_SETTINGS_ID)) createSettingsUI()
+    }, 2000)
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init)
