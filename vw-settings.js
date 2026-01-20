@@ -48,54 +48,40 @@
   }
 
   function hasGM() {
-    return typeof GM_getValue === 'function' && typeof GM_setValue === 'function' && typeof GM_info === 'object'
+    return typeof GM_getValue === 'function' && typeof GM_setValue === 'function'
   }
 
   function getStoredValue(key, defaultValue) {
-    try {
-      if (hasGM()) {
-        return GM_getValue(key, defaultValue)
-      }
-    } catch (e) {
-      console.warn('[VW_Settings] GM_getValue failed:', e)
+    if (hasGM()) {
+      return GM_getValue(key, defaultValue)
     }
-    try {
-      const lsValue = localStorage.getItem(key)
-      if (lsValue === null) return defaultValue
-      if (typeof defaultValue === 'boolean') return lsValue === 'true'
-      if (typeof defaultValue === 'number') {
-        const n = parseInt(lsValue, 10)
-        return Number.isFinite(n) ? n : defaultValue
-      }
-      return lsValue
-    } catch (e) {
-      console.warn('[VW_Settings] localStorage read failed:', e)
-      return defaultValue
+    const lsValue = localStorage.getItem(key)
+    if (lsValue === null) return defaultValue
+    if (typeof defaultValue === 'boolean') return lsValue === 'true'
+    if (typeof defaultValue === 'number') {
+      const n = parseInt(lsValue, 10)
+      return Number.isFinite(n) ? n : defaultValue
     }
+    return lsValue
   }
 
   function setStoredValue(key, value) {
-    try {
-      if (hasGM()) {
-        GM_setValue(key, value)
-        console.info('[VW_Settings] Saved to GM:', key, value)
-      } else {
-        console.info('[VW_Settings] GM not available, saved to localStorage:', key, value)
-      }
-    } catch (e) {
-      console.warn('[VW_Settings] GM_setValue failed:', e)
-    }
-    try {
-      localStorage.setItem(key, String(value))
-    } catch (e) {
-      console.warn('[VW_Settings] localStorage write failed:', e)
-    }
+    if (hasGM()) GM_setValue(key, value)
+    localStorage.setItem(key, String(value))
   }
 
   function clampInt(value, min, max, def) {
     const n = parseInt(String(value), 10)
     if (!Number.isFinite(n)) return def
     return Math.min(max, Math.max(min, n))
+  }
+
+  function syncVWConfigFromStorage() {
+    window.VW_CONFIG = window.VW_CONFIG || {}
+    window.VW_CONFIG.keys = window.VW_CONFIG.keys || keys
+    window.VW_CONFIG.lootlinkLocal = !!getStoredValue(keys.lootlinkLocal, true)
+    window.VW_CONFIG.redirectWaitTime = clampInt(getStoredValue(keys.redirectWaitTime, 5), 0, 60, 5)
+    window.VW_CONFIG.luarmorWaitTime = clampInt(getStoredValue(keys.luarmorWaitTime, 20), 0, 120, 20)
   }
 
   function createSettingsUI() {
@@ -211,14 +197,9 @@
       setStoredValue(keys.redirectWaitTime, newWaitTime)
       setStoredValue(keys.luarmorWaitTime, newLuarmorWaitTime)
 
-      if (window.VW_CONFIG) {
-        window.VW_CONFIG.lootlinkLocal = newLootlink
-        window.VW_CONFIG.redirectWaitTime = newWaitTime
-        window.VW_CONFIG.luarmorWaitTime = newLuarmorWaitTime
-      }
+      syncVWConfigFromStorage()
 
-      const savedGlobally = hasGM()
-      showToast(shadow, savedGlobally ? '✓ Settings saved globally!' : '✓ Settings saved (localStorage only)')
+      showToast(shadow, hasGM() ? '✓ Settings saved globally!' : '✓ Settings saved (localStorage)!')
       closePanel()
     })
 
@@ -244,6 +225,7 @@
   }
 
   function init() {
+    syncVWConfigFromStorage()
     createSettingsUI()
     const observer = new MutationObserver(() => {
       if (!document.getElementById(VW_SETTINGS_ID)) createSettingsUI()
@@ -251,7 +233,7 @@
     observer.observe(document.documentElement, { childList: true, subtree: true })
     setInterval(() => {
       if (!document.getElementById(VW_SETTINGS_ID)) createSettingsUI()
-    }, 5000)
+    }, 2000)
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init)
