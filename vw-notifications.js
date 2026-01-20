@@ -6,6 +6,10 @@
   const shown = new Set()
 
   let defaultIconHtml = ''
+  let loopTimer = null
+  let loopItems = []
+  let loopIndex = 0
+  const LOOP_MS = 3500
 
   const CSS = `
 #${CONTAINER_ID}{
@@ -18,13 +22,12 @@
   gap:12px !important;
   pointer-events:none !important;
   align-items:flex-end !important;
-  transform:translateZ(9999px) !important;
 }
 .vw-notif-toast{
   background:rgba(10,14,40,0.98) !important;
   border-left:4px solid #1e2be8 !important;
   border-radius:10px !important;
-  width:250px !important;
+  width:300px !important;
   max-width:90vw !important;
   box-shadow:0 8px 32px rgba(0,0,0,0.55) !important;
   overflow:hidden !important;
@@ -55,6 +58,22 @@
   justify-content:center !important;
   font-size:14px !important;
   overflow:hidden !important;
+  flex:0 0 auto !important;
+}
+.vw-notif-title{
+  color:#7aa2ff !important;
+  font-weight:900 !important;
+  font-size:13px !important;
+  line-height:1.15 !important;
+}
+.vw-notif-msg{
+  color:rgba(207,214,230,0.85) !important;
+  font-weight:700 !important;
+  font-size:12px !important;
+  line-height:1.15 !important;
+  white-space:nowrap !important;
+  overflow:hidden !important;
+  text-overflow:ellipsis !important;
 }
 .vw-notif-bar{
   height:3px !important;
@@ -83,8 +102,7 @@
     if (container) return container
     container = document.createElement('div')
     container.id = CONTAINER_ID
-    const mountPoint = document.body || document.documentElement
-    mountPoint.appendChild(container)
+    ;(document.body || document.documentElement).appendChild(container)
     return container
   }
 
@@ -93,10 +111,11 @@
     document.addEventListener('DOMContentLoaded', fn, { once: true })
   }
 
-  function show(title, message, type = 'info', timeout = 3500, iconHtml) {
+  function show(title, message, type = 'info', timeout = LOOP_MS, iconHtml) {
     mountSafe(() => {
       ensureStyles()
       const container = ensureContainer()
+
       const id = `${title}::${message}::${type}`
       if (shown.has(id)) return
       shown.add(id)
@@ -112,7 +131,10 @@
       toast.innerHTML = `
         <div class="vw-notif-content">
           <div class="vw-icon-circle">${iconContent}</div>
-          <span style="color:#7aa2ff;font-weight:900">${title}</span>
+          <div style="display:flex;flex-direction:column;gap:2px;min-width:0;">
+            <div class="vw-notif-title">${String(title || '')}</div>
+            <div class="vw-notif-msg">${String(message || '')}</div>
+          </div>
         </div>
         <div class="vw-notif-bar" style="animation-duration:${timeout}ms;"></div>
       `
@@ -134,5 +156,30 @@
     defaultIconHtml = String(html || '')
   }
 
-  window.VW_Notifications = { show, setDefaultIconHtml }
+  function startLoop(items) {
+    loopItems = Array.isArray(items) ? items.filter(Boolean) : []
+    loopIndex = 0
+
+    if (loopTimer) {
+      clearInterval(loopTimer)
+      loopTimer = null
+    }
+    if (!loopItems.length) return
+
+    const tick = () => {
+      const item = loopItems[loopIndex % loopItems.length]
+      loopIndex++
+      show(item.title || 'VortixWorld Bypass', item.message || '', item.type || 'info', LOOP_MS, item.iconHtml)
+    }
+
+    tick()
+    loopTimer = setInterval(tick, LOOP_MS)
+  }
+
+  function stopLoop() {
+    if (loopTimer) clearInterval(loopTimer)
+    loopTimer = null
+  }
+
+  window.VW_Notifications = { show, setDefaultIconHtml, startLoop, stopLoop }
 })()
