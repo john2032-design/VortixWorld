@@ -5,6 +5,7 @@
   const CONTAINER_ID = 'vwNotificationContainer'
   const BYPASS_HOST = 'vortix-world-bypass.vercel.app'
   const DISPLAY_MS = 3500
+  const BAR_MS = 3500
   const GAP_MS = 250
   const shownNonLoop = new Set()
   const queue = []
@@ -67,7 +68,7 @@
   pointer-events:auto !important;
   transform:translateX(120%) !important;
   opacity:0 !important;
-  animation:vw-toast-in 280ms cubic-bezier(0.2,0.9,0.2,1) forwards !important;
+  animation:vw-toast-in 250ms cubic-bezier(0.2,0.9,0.2,1) forwards !important;
 }
 .vw-notif-content{
   display:flex !important;
@@ -121,7 +122,7 @@
   animation:vw-bar linear forwards !important;
 }
 .vw-toast-out{
-  animation:vw-toast-out 360ms cubic-bezier(0.4,0,0.2,1) forwards !important;
+  animation:vw-toast-out 250ms cubic-bezier(0.4,0,0.2,1) forwards !important;
 }
 @keyframes vw-toast-in{
   from{transform:translateX(120%);opacity:0;}
@@ -204,7 +205,7 @@
           <div class="vw-notif-message">${String(message)}</div>
         </div>
       </div>
-      <div class="vw-notif-bar" style="animation-duration:${timeout}ms;"></div>
+      <div class="vw-notif-bar" style="animation-duration:${BAR_MS}ms;"></div>
     `
 
     container.appendChild(toast)
@@ -218,8 +219,8 @@
 
     setTimeout(() => {
       toast.classList.add('vw-toast-out')
-      setTimeout(cleanup, 420)
-    }, timeout)
+      setTimeout(cleanup, 250)
+    }, DISPLAY_MS)
   }
 
   function flushQueue() {
