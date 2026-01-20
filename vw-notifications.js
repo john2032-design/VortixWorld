@@ -45,7 +45,7 @@
   position:fixed !important;
   top:18px !important;
   right:18px !important;
-  z-index:2147483647 !important;
+  z-index:2147483680 !important;
   display:flex !important;
   flex-direction:column !important;
   gap:12px !important;
@@ -179,6 +179,14 @@
     if (!loopLike) {
       if (shownNonLoop.has(key)) return
       shownNonLoop.add(key)
+    } else {
+      const existing = Array.from(container.querySelectorAll('.vw-notif-toast'))
+      existing.forEach(t => {
+        try {
+          t.classList.add('vw-toast-out')
+          setTimeout(() => { try { t.remove() } catch (_) {} }, 250)
+        } catch (_) {}
+      })
     }
     const toast = document.createElement('div')
     toast.className = 'vw-notif-toast'
