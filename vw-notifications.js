@@ -5,7 +5,7 @@
   const CONTAINER_ID = 'vwNotificationContainer'
   const BYPASS_HOST = 'vortix-world-bypass.vercel.app'
   const DISPLAY_MS = 3500
-  const BAR_MS = 3500
+  const OUT_MS = 250
   const GAP_MS = 250
   const shownNonLoop = new Set()
   const queue = []
@@ -122,7 +122,7 @@
   animation:vw-bar linear forwards !important;
 }
 .vw-toast-out{
-  animation:vw-toast-out 250ms cubic-bezier(0.4,0,0.2,1) forwards !important;
+  animation:vw-toast-out ${OUT_MS}ms cubic-bezier(0.4,0,0.2,1) forwards !important;
 }
 @keyframes vw-toast-in{
   from{transform:translateX(120%);opacity:0;}
@@ -192,6 +192,7 @@
     toast.className = 'vw-notif-toast'
 
     const icon = normalizeIcon(iconHtml || defaultIconHtml, type)
+    const dur = Number.isFinite(timeout) ? timeout : DISPLAY_MS
 
     toast.innerHTML = `
       <div class="vw-notif-content">
@@ -201,22 +202,20 @@
           <div class="vw-notif-message">${String(message)}</div>
         </div>
       </div>
-      <div class="vw-notif-bar" style="animation-duration:${BAR_MS}ms;"></div>
+      <div class="vw-notif-bar" style="animation-duration:${dur}ms;"></div>
     `
 
     container.appendChild(toast)
 
     const cleanup = () => {
-      try {
-        toast.remove()
-      } catch (_) {}
+      try { toast.remove() } catch (_) {}
       if (!loopLike) shownNonLoop.delete(key)
     }
 
     setTimeout(() => {
       toast.classList.add('vw-toast-out')
-      setTimeout(cleanup, 250)
-    }, DISPLAY_MS)
+      setTimeout(cleanup, OUT_MS)
+    }, dur)
   }
 
   function flushQueue() {
@@ -261,12 +260,9 @@
     const discordIcon = '<img src="https://assets-global.website-files.com/6257adef93867e56f84d3092/636e0a6a49cf127bf92de1e2_icon_clyde_blurple_RGB.png">'
     const vwIcon = defaultIconHtml || '<span>V</span>'
 
-    const steps = {
-      stepIndex: 0,
-      siteIndex: 0
-    }
+    const steps = { stepIndex: 0, siteIndex: 0 }
 
-    const messages = () => {
+    const getSequence = () => {
       const site = MATCH_HOSTS_SORTED[steps.siteIndex % MATCH_HOSTS_SORTED.length]
       return [
         { title: 'VortixWorld Bypass', message: 'VortixWorld Bypass', icon: vwIcon },
@@ -278,12 +274,12 @@
 
     const tick = () => {
       if (!loopStarted) return
-      const arr = messages()
+      const seq = getSequence()
       if (steps.stepIndex === 1) steps.siteIndex++
-      const cur = arr[steps.stepIndex]
+      const cur = seq[steps.stepIndex]
       show(cur.title, cur.message, 'info', DISPLAY_MS, cur.icon)
-      steps.stepIndex = (steps.stepIndex + 1) % arr.length
-      loopTimer = setTimeout(tick, DISPLAY_MS + 250 + GAP_MS)
+      steps.stepIndex = (steps.stepIndex + 1) % seq.length
+      loopTimer = setTimeout(tick, DISPLAY_MS + OUT_MS + GAP_MS)
     }
 
     const start = () => setTimeout(tick, 900)
