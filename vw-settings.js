@@ -1,10 +1,7 @@
 ;(function () {
   'use strict'
-
   if (window.top !== window.self) return
-
   const VW_SETTINGS_ID = 'vw-settings-shadow-host'
-
   const SETTINGS_CSS = `
 *{margin:0;padding:0;box-sizing:border-box;}
 :host{all:initial;position:fixed !important;bottom:14px !important;left:14px !important;z-index:2147483647 !important;pointer-events:none !important;}
@@ -40,17 +37,14 @@
 .vw-toast{position:fixed !important;bottom:70px !important;left:14px !important;padding:10px 16px !important;border-radius:10px !important;background:linear-gradient(90deg,#0f1b4f,#1e2be8) !important;color:#cfd6e6 !important;font-weight:900 !important;font-size:13px !important;box-shadow:0 8px 32px rgba(0,0,0,0.5) !important;animation:vw-toast-in 0.3s ease-out !important;z-index:2147483647 !important;pointer-events:none !important;font-family:system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif !important;}
 @keyframes vw-toast-in{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
 `
-
   const keys = {
     lootlinkLocal: 'vw_lootlink_local',
     redirectWaitTime: 'vw_redirect_wait_time',
     luarmorWaitTime: 'vw_luarmor_wait_time'
   }
-
   function hasGM() {
     return typeof GM_getValue === 'function' && typeof GM_setValue === 'function'
   }
-
   function getStoredValue(key, defaultValue) {
     if (hasGM()) {
       return GM_getValue(key, defaultValue)
@@ -64,37 +58,31 @@
     }
     return lsValue
   }
-
   function setStoredValue(key, value) {
-    if (hasGM()) GM_setValue(key, value)
-    localStorage.setItem(key, String(value))
+    if (hasGM()) {
+      try { GM_setValue(key, value) } catch (_) {}
+    }
+    try { localStorage.setItem(key, String(value)) } catch (_) {}
   }
-
   function clampInt(value, min, max, def) {
     const n = parseInt(String(value), 10)
     if (!Number.isFinite(n)) return def
     return Math.min(max, Math.max(min, n))
   }
-
   function createSettingsUI() {
     const existing = document.getElementById(VW_SETTINGS_ID)
     if (existing) existing.remove()
-
     const host = document.createElement('div')
     host.id = VW_SETTINGS_ID
     host.style.cssText = 'all: initial !important; position: fixed !important; bottom: 14px !important; left: 14px !important; width: 48px !important; height: 48px !important; z-index: 2147483647 !important; pointer-events: none !important; isolation: isolate !important;'
-
     const shadow = host.attachShadow({ mode: 'closed' })
-
     const style = document.createElement('style')
     style.textContent = SETTINGS_CSS
     shadow.appendChild(style)
-
     const gearBtn = document.createElement('div')
     gearBtn.className = 'vw-gear-btn'
     gearBtn.textContent = '⚙️'
     shadow.appendChild(gearBtn)
-
     const backdrop = document.createElement('div')
     backdrop.className = 'vw-backdrop'
     backdrop.innerHTML = `
@@ -114,7 +102,6 @@
               <span class="vw-switch-slider"></span>
             </label>
           </div>
-
           <div class="vw-row">
             <div class="vw-label">
               <div class="vw-label-title">Redirect Wait Time</div>
@@ -122,7 +109,6 @@
             </div>
             <input type="number" class="vw-input" id="vwWaitTimeInput" min="0" max="60">
           </div>
-
           <div class="vw-row">
             <div class="vw-label">
               <div class="vw-label-title">Luarmor Next Wait</div>
@@ -130,7 +116,6 @@
             </div>
             <input type="number" class="vw-input" id="vwLuarmorWaitTimeInput" min="0" max="120">
           </div>
-
           <div class="vw-actions">
             <button class="vw-btn" id="vwReloadBtn" type="button">Reload Page</button>
             <button class="vw-btn vw-btn-primary" id="vwApplyBtn" type="button">Apply & Save</button>
@@ -139,7 +124,6 @@
       </div>
     `
     shadow.appendChild(backdrop)
-
     const closeBtn = shadow.querySelector('.vw-close-btn')
     const panel = shadow.querySelector('.vw-panel')
     const lootlinkToggle = shadow.querySelector('#vwLootlinkToggle')
@@ -147,65 +131,73 @@
     const luarmorWaitTimeInput = shadow.querySelector('#vwLuarmorWaitTimeInput')
     const applyBtn = shadow.querySelector('#vwApplyBtn')
     const reloadBtn = shadow.querySelector('#vwReloadBtn')
-
     function openPanel() {
       lootlinkToggle.checked = !!getStoredValue(keys.lootlinkLocal, true)
       waitTimeInput.value = String(clampInt(getStoredValue(keys.redirectWaitTime, 5), 0, 60, 5))
       luarmorWaitTimeInput.value = String(clampInt(getStoredValue(keys.luarmorWaitTime, 20), 0, 120, 20))
       backdrop.classList.add('open')
     }
-
     function closePanel() {
       backdrop.classList.remove('open')
     }
-
     gearBtn.addEventListener('click', (e) => {
       e.preventDefault()
       e.stopPropagation()
       openPanel()
     })
-
     closeBtn.addEventListener('click', (e) => {
       e.preventDefault()
       e.stopPropagation()
       closePanel()
     })
-
     backdrop.addEventListener('click', (e) => {
       if (e.target === backdrop) closePanel()
     })
-
     panel.addEventListener('click', (e) => e.stopPropagation())
-
     applyBtn.addEventListener('click', (e) => {
       e.preventDefault()
       e.stopPropagation()
-
       const newLootlink = !!lootlinkToggle.checked
       const newWaitTime = clampInt(waitTimeInput.value, 0, 60, 5)
       const newLuarmorWaitTime = clampInt(luarmorWaitTimeInput.value, 0, 120, 20)
-
       setStoredValue(keys.lootlinkLocal, newLootlink)
       setStoredValue(keys.redirectWaitTime, newWaitTime)
       setStoredValue(keys.luarmorWaitTime, newLuarmorWaitTime)
-
-      // Update global config if exists
-      if (window.VW_CONFIG) {
-        window.VW_CONFIG.lootlinkLocal = newLootlink
-        window.VW_CONFIG.redirectWaitTime = newWaitTime
-        window.VW_CONFIG.luarmorWaitTime = newLuarmorWaitTime
-      }
-
+      try {
+        if (window.VW_CONFIG && typeof window.VW_CONFIG === 'object') {
+          window.VW_CONFIG.lootlinkLocal = newLootlink
+          window.VW_CONFIG.redirectWaitTime = newWaitTime
+          window.VW_CONFIG.luarmorWaitTime = newLuarmorWaitTime
+        }
+      } catch (_) {}
+      try {
+        window.dispatchEvent(new CustomEvent('vw-settings-updated', {
+          detail: {
+            lootlinkLocal: newLootlink,
+            redirectWaitTime: newWaitTime,
+            luarmorWaitTime: newLuarmorWaitTime
+          }
+        }))
+      } catch (_) {}
+      try {
+        window.postMessage({
+          source: 'vortixworld-settings',
+          type: 'VW_SETTINGS_UPDATED',
+          payload: {
+            lootlinkLocal: newLootlink,
+            redirectWaitTime: newWaitTime,
+            luarmorWaitTime: newLuarmorWaitTime
+          }
+        }, '*')
+      } catch (_) {}
       showToast(shadow, hasGM() ? '✓ Settings saved globally!' : '✓ Settings saved (localStorage)!')
       closePanel()
     })
-
     reloadBtn.addEventListener('click', (e) => {
       e.preventDefault()
       e.stopPropagation()
       location.reload()
     })
-
     function showToast(shadowRoot, message) {
       const existingToast = shadowRoot.querySelector('.vw-toast')
       if (existingToast) existingToast.remove()
@@ -217,10 +209,8 @@
         try { toast.remove() } catch (_) {}
       }, 2500)
     }
-
     document.documentElement.appendChild(host)
   }
-
   function init() {
     createSettingsUI()
     const observer = new MutationObserver(() => {
@@ -231,7 +221,6 @@
       if (!document.getElementById(VW_SETTINGS_ID)) createSettingsUI()
     }, 2000)
   }
-
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init)
   else init()
 })()
