@@ -44,8 +44,7 @@
   const keys = {
     lootlinkLocal: 'vw_lootlink_local',
     redirectWaitTime: 'vw_redirect_wait_time',
-    luarmorWaitTime: 'vw_luarmor_wait_time',
-    autoRedirect: 'vw_auto_redirect'
+    luarmorWaitTime: 'vw_luarmor_wait_time'
   }
 
   function hasGM() {
@@ -54,8 +53,7 @@
 
   function getStoredValue(key, defaultValue) {
     if (hasGM()) {
-      const v = GM_getValue(key, defaultValue)
-      return v
+      return GM_getValue(key, defaultValue)
     }
     const lsValue = localStorage.getItem(key)
     if (lsValue === null) return defaultValue
@@ -72,37 +70,10 @@
     localStorage.setItem(key, String(value))
   }
 
-  function clampInt(v, min, max, def) {
-    const n = parseInt(String(v), 10)
+  function clampInt(value, min, max, def) {
+    const n = parseInt(String(value), 10)
     if (!Number.isFinite(n)) return def
     return Math.min(max, Math.max(min, n))
-  }
-
-  function showToast(shadow, message) {
-    const existingToast = shadow.querySelector('.vw-toast')
-    if (existingToast) existingToast.remove()
-    const toast = document.createElement('div')
-    toast.className = 'vw-toast'
-    toast.textContent = message
-    shadow.appendChild(toast)
-    setTimeout(() => {
-      try {
-        toast.remove()
-      } catch (_) {}
-    }, 2500)
-  }
-
-  function syncWindowConfig() {
-    window.VW_CONFIG = window.VW_CONFIG || {}
-    window.VW_CONFIG.keys = window.VW_CONFIG.keys || {}
-    window.VW_CONFIG.keys.lootlinkLocal = keys.lootlinkLocal
-    window.VW_CONFIG.keys.redirectWaitTime = keys.redirectWaitTime
-    window.VW_CONFIG.keys.luarmorWaitTime = keys.luarmorWaitTime
-    window.VW_CONFIG.keys.autoRedirect = keys.autoRedirect
-    window.VW_CONFIG.lootlinkLocal = !!getStoredValue(keys.lootlinkLocal, true)
-    window.VW_CONFIG.redirectWaitTime = clampInt(getStoredValue(keys.redirectWaitTime, 5), 0, 60, 5)
-    window.VW_CONFIG.luarmorWaitTime = clampInt(getStoredValue(keys.luarmorWaitTime, 20), 0, 120, 20)
-    window.VW_CONFIG.autoRedirect = !!getStoredValue(keys.autoRedirect, true)
   }
 
   function createSettingsUI() {
@@ -146,17 +117,6 @@
 
           <div class="vw-row">
             <div class="vw-label">
-              <div class="vw-label-title">AutoRedirect</div>
-              <div class="vw-label-desc">Redirect automatically after bypass</div>
-            </div>
-            <label class="vw-switch">
-              <input type="checkbox" id="vwAutoRedirectToggle">
-              <span class="vw-switch-slider"></span>
-            </label>
-          </div>
-
-          <div class="vw-row">
-            <div class="vw-label">
               <div class="vw-label-title">Redirect Wait Time</div>
               <div class="vw-label-desc">Delay before redirecting to bypass site (0-60)</div>
             </div>
@@ -183,7 +143,6 @@
     const closeBtn = shadow.querySelector('.vw-close-btn')
     const panel = shadow.querySelector('.vw-panel')
     const lootlinkToggle = shadow.querySelector('#vwLootlinkToggle')
-    const autoRedirectToggle = shadow.querySelector('#vwAutoRedirectToggle')
     const waitTimeInput = shadow.querySelector('#vwWaitTimeInput')
     const luarmorWaitTimeInput = shadow.querySelector('#vwLuarmorWaitTimeInput')
     const applyBtn = shadow.querySelector('#vwApplyBtn')
@@ -191,7 +150,6 @@
 
     function openPanel() {
       lootlinkToggle.checked = !!getStoredValue(keys.lootlinkLocal, true)
-      autoRedirectToggle.checked = !!getStoredValue(keys.autoRedirect, true)
       waitTimeInput.value = String(clampInt(getStoredValue(keys.redirectWaitTime, 5), 0, 60, 5))
       luarmorWaitTimeInput.value = String(clampInt(getStoredValue(keys.luarmorWaitTime, 20), 0, 120, 20))
       backdrop.classList.add('open')
@@ -224,16 +182,20 @@
       e.stopPropagation()
 
       const newLootlink = !!lootlinkToggle.checked
-      const newAutoRedirect = !!autoRedirectToggle.checked
       const newWaitTime = clampInt(waitTimeInput.value, 0, 60, 5)
       const newLuarmorWaitTime = clampInt(luarmorWaitTimeInput.value, 0, 120, 20)
 
       setStoredValue(keys.lootlinkLocal, newLootlink)
-      setStoredValue(keys.autoRedirect, newAutoRedirect)
       setStoredValue(keys.redirectWaitTime, newWaitTime)
       setStoredValue(keys.luarmorWaitTime, newLuarmorWaitTime)
 
-      syncWindowConfig()
+      // Update global config if exists
+      if (window.VW_CONFIG) {
+        window.VW_CONFIG.lootlinkLocal = newLootlink
+        window.VW_CONFIG.redirectWaitTime = newWaitTime
+        window.VW_CONFIG.luarmorWaitTime = newLuarmorWaitTime
+      }
+
       showToast(shadow, hasGM() ? '✓ Settings saved globally!' : '✓ Settings saved (localStorage)!')
       closePanel()
     })
@@ -244,8 +206,19 @@
       location.reload()
     })
 
+    function showToast(shadowRoot, message) {
+      const existingToast = shadowRoot.querySelector('.vw-toast')
+      if (existingToast) existingToast.remove()
+      const toast = document.createElement('div')
+      toast.className = 'vw-toast'
+      toast.textContent = message
+      shadowRoot.appendChild(toast)
+      setTimeout(() => {
+        try { toast.remove() } catch (_) {}
+      }, 2500)
+    }
+
     document.documentElement.appendChild(host)
-    syncWindowConfig()
   }
 
   function init() {
