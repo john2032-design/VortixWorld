@@ -1,15 +1,17 @@
 ;(function () {
   'use strict'
 
+  const HOST_ID = 'vw-notification-shadow-host'
   const STYLE_ID = 'vwNotificationStyles'
   const CONTAINER_ID = 'vwNotificationContainer'
   const BYPASS_HOST = 'vortix-world-bypass.vercel.app'
-  const queue = []
+
   let defaultIconHtml = ''
   let initDone = false
-  const shownNonLoop = new Set()
+  const queue = []
 
   const CSS = `
+:host{all:initial;}
 #${CONTAINER_ID}{
   position:fixed !important;
   top:18px !important;
@@ -107,23 +109,6 @@
 }
 `
 
-  function ensureStyles() {
-    if (document.getElementById(STYLE_ID)) return
-    const style = document.createElement('style')
-    style.id = STYLE_ID
-    style.textContent = CSS
-    ;(document.head || document.documentElement).appendChild(style)
-  }
-
-  function ensureContainer() {
-    let c = document.getElementById(CONTAINER_ID)
-    if (c) return c
-    c = document.createElement('div')
-    c.id = CONTAINER_ID
-    ;(document.body || document.documentElement).appendChild(c)
-    return c
-  }
-
   function hostIsIgnoredForUnsupported() {
     const h = (location.hostname || '').toLowerCase()
     if (h === BYPASS_HOST || h.endsWith('.' + BYPASS_HOST)) return true
@@ -140,51 +125,88 @@
     return '<span>ℹ️</span>'
   }
 
+  function ensureHost() {
+    let host = document.getElementById(HOST_ID)
+    if (host && host.__vwShadow) return host
+
+    if (host) {
+      try { host.remove() } catch (_) {}
+    }
+
+    host = document.createElement('div')
+    host.id = HOST_ID
+    host.style.cssText = 'all: initial !important; position: fixed !important; inset: 0 !important; width: 0 !important; height: 0 !important; z-index: 2147483647 !important; pointer-events: none !important;'
+
+    const root = host.attachShadow({ mode: 'open' })
+    host.__vwShadow = root
+
+    const style = document.createElement('style')
+    style.id = STYLE_ID
+    style.textContent = CSS
+    root.appendChild(style)
+
+    const container = document.createElement('div')
+    container.id = CONTAINER_ID
+    root.appendChild(container)
+
+    ;(document.documentElement || document).appendChild(host)
+    return host
+  }
+
+  function getContainer() {
+    const host = ensureHost()
+    const root = host.__vwShadow
+    const c = root && root.getElementById ? root.getElementById(CONTAINER_ID) : root.querySelector('#' + CONTAINER_ID)
+    return c || null
+  }
+
   function renderToast(title, message, type, timeout, iconHtml) {
     if (String(title).includes('Unsupported Site') && hostIsIgnoredForUnsupported()) return
-    ensureStyles()
-    const container = ensureContainer()
+
+    const container = getContainer()
+    if (!container) return
 
     const msRaw = Number(timeout)
     const ms = Number.isFinite(msRaw) ? Math.max(800, msRaw) : 3500
-
-    const key = `${title}::${message}::${type}`
-    if (shownNonLoop.has(key)) return
-    shownNonLoop.add(key)
 
     const toast = document.createElement('div')
     toast.className = 'vw-notif-toast'
 
     const icon = normalizeIcon(iconHtml || defaultIconHtml, type)
-
     toast.innerHTML = `
       <div class="vw-notif-content">
         <div class="vw-notif-icon">${icon}</div>
         <div class="vw-notif-text">
-          <div class="vw-notif-title">${String(title)}</div>
-          <div class="vw-notif-message">${String(message)}</div>
+          <div class="vw-notif-title"></div>
+          <div class="vw-notif-message"></div>
         </div>
       </div>
-      <div class="vw-notif-bar" style="animation-duration:${ms}ms;"></div>
+      <div class="vw-notif-bar"></div>
     `
+
+    const tEl = toast.querySelector('.vw-notif-title')
+    const mEl = toast.querySelector('.vw-notif-message')
+    if (tEl) tEl.textContent = String(title)
+    if (mEl) mEl.textContent = String(message)
+
+    const bar = toast.querySelector('.vw-notif-bar')
+    if (bar) bar.style.animationDuration = ms + 'ms'
 
     container.appendChild(toast)
 
     const cleanup = () => {
-      try {
-        toast.remove()
-      } catch (_) {}
-      shownNonLoop.delete(key)
+      try { toast.remove() } catch (_) {}
     }
 
-    setTimeout(() => {
+    const startOut = () => {
       toast.classList.add('vw-toast-out')
-      setTimeout(cleanup, 250)
-    }, ms)
+      setTimeout(cleanup, 260)
+    }
+
+    setTimeout(startOut, ms)
   }
 
   function flushQueue() {
-    if (!initDone) return
     while (queue.length) {
       const x = queue.shift()
       renderToast(x.title, x.message, x.type, x.timeout, x.iconHtml)
@@ -194,9 +216,17 @@
   function init() {
     if (initDone) return
     initDone = true
-    ensureStyles()
-    ensureContainer()
+    ensureHost()
     flushQueue()
+    const mo = new MutationObserver(() => {
+      if (!document.getElementById(HOST_ID)) {
+        try { initDone = false } catch (_) {}
+        init()
+      }
+    })
+    try {
+      mo.observe(document.documentElement || document, { childList: true, subtree: true })
+    } catch (_) {}
   }
 
   function show(title, message, type = 'info', timeout = 3500, iconHtml) {
