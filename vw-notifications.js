@@ -4,49 +4,10 @@
   const STYLE_ID = 'vwNotificationStyles'
   const CONTAINER_ID = 'vwNotificationContainer'
   const BYPASS_HOST = 'vortix-world-bypass.vercel.app'
-  const DISPLAY_MS = 3500
-  const BAR_MS = 3500
-  const GAP_MS = 500
-  const shownNonLoop = new Set()
   const queue = []
-
-  const MATCH_HOSTS_SORTED = [
-    'airflowscript.com',
-    'auth.platorelay.com',
-    'best-links.org',
-    'blox-script.com',
-    'cuttlinks.com',
-    'cuttty.com',
-    'cuty.io',
-    'cutynow.com',
-    'keyrblx.com',
-    'linkvertise.com',
-    'links-loot.com',
-    'linksloot.net',
-    'loot-labs.com',
-    'loot-link.com',
-    'loot-links.com',
-    'lootdest.com',
-    'lootdest.info',
-    'lootdest.org',
-    'lootlabs.com',
-    'lootlink.org',
-    'lootlinks.co',
-    'lootlinks.com',
-    'mboost.me',
-    'neoxsoftworks.eu',
-    'pandadevelopment.net',
-    'work.ink'
-  ]
-
-  const DISCORD_LOGO = 'https://assets-global.website-files.com/6257adef93867e56f84d3092/636e0a6a49cf127bf92de1e2_icon_clyde_blurple_RGB.png'
-  const VW_ICON = 'https://i.ibb.co/p6Qjk6gP/BFB1896-C-9-FA4-4429-881-A-38074322-DFCB.png'
-
-  let defaultIconHtml = `<img src="${VW_ICON}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`
-  let loopStarted = false
-  let loopTimer = null
+  let defaultIconHtml = ''
   let initDone = false
-  let currentHostIndex = 0
+  const shownNonLoop = new Set()
 
   const CSS = `
 #${CONTAINER_ID}{
@@ -181,21 +142,15 @@
 
   function renderToast(title, message, type, timeout, iconHtml) {
     if (String(title).includes('Unsupported Site') && hostIsIgnoredForUnsupported()) return
-    
     ensureStyles()
     const container = ensureContainer()
 
-    const loopLike =
-      String(title) === 'VortixWorld Bypass' ||
-      String(title) === 'Supported Site' ||
-      String(title) === 'Join Discord' ||
-      String(title) === 'Created By'
+    const msRaw = Number(timeout)
+    const ms = Number.isFinite(msRaw) ? Math.max(800, msRaw) : 3500
 
     const key = `${title}::${message}::${type}`
-    if (!loopLike) {
-      if (shownNonLoop.has(key)) return
-      shownNonLoop.add(key)
-    }
+    if (shownNonLoop.has(key)) return
+    shownNonLoop.add(key)
 
     const toast = document.createElement('div')
     toast.className = 'vw-notif-toast'
@@ -210,7 +165,7 @@
           <div class="vw-notif-message">${String(message)}</div>
         </div>
       </div>
-      <div class="vw-notif-bar" style="animation-duration:${BAR_MS}ms;"></div>
+      <div class="vw-notif-bar" style="animation-duration:${ms}ms;"></div>
     `
 
     container.appendChild(toast)
@@ -219,13 +174,13 @@
       try {
         toast.remove()
       } catch (_) {}
-      if (!loopLike) shownNonLoop.delete(key)
+      shownNonLoop.delete(key)
     }
 
     setTimeout(() => {
       toast.classList.add('vw-toast-out')
       setTimeout(cleanup, 250)
-    }, DISPLAY_MS)
+    }, ms)
   }
 
   function flushQueue() {
@@ -242,10 +197,9 @@
     ensureStyles()
     ensureContainer()
     flushQueue()
-    startLoop()
   }
 
-  function show(title, message, type = 'info', timeout = DISPLAY_MS, iconHtml) {
+  function show(title, message, type = 'info', timeout = 3500, iconHtml) {
     const payload = { title, message, type, timeout, iconHtml }
     if (!document.documentElement) {
       queue.push(payload)
@@ -264,67 +218,8 @@
     defaultIconHtml = String(html || '')
   }
 
-  function startLoop() {
-    if (loopStarted) return
-    loopStarted = true
-
-    const loopMessages = [
-      {
-        title: 'VortixWorld Bypass',
-        message: 'Active & Ready',
-        iconHtml: defaultIconHtml || '<span>V</span>'
-      },
-      {
-        title: 'Supported Site',
-        message: MATCH_HOSTS_SORTED[currentHostIndex],
-        iconHtml: '<span>🔗</span>'
-      },
-      {
-        title: 'Join Discord',
-        message: 'https://discord.gg/vortex-x-sideload-bypass-1355388445509288047',
-        iconHtml: `<img src="${DISCORD_LOGO}" style="width:100%;height:100%;object-fit:cover;">`
-      },
-      {
-        title: 'Created By',
-        message: 'afk.l0l',
-        iconHtml: '<span>👑</span>'
-      }
-    ]
-
-    let currentStep = 0
-
-    function showNextMessage() {
-      if (!loopStarted) return
-
-      const msg = loopMessages[currentStep]
-      show(msg.title, msg.message, 'info', DISPLAY_MS, msg.iconHtml)
-
-      currentStep = (currentStep + 1) % loopMessages.length
-      
-      if (currentStep === 1) {
-        currentHostIndex = (currentHostIndex + 1) % MATCH_HOSTS_SORTED.length
-        loopMessages[1].message = MATCH_HOSTS_SORTED[currentHostIndex]
-      }
-
-      loopTimer = setTimeout(showNextMessage, DISPLAY_MS + GAP_MS)
-    }
-
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', () => {
-        setTimeout(showNextMessage, 1000)
-      }, { once: true })
-    } else {
-      setTimeout(showNextMessage, 1000)
-    }
-  }
-
-  function stopLoop() {
-    loopStarted = false
-    if (loopTimer) {
-      clearTimeout(loopTimer)
-      loopTimer = null
-    }
-  }
+  function startLoop() {}
+  function stopLoop() {}
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init, { once: true })
   else init()
