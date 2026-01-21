@@ -5,23 +5,6 @@
 
   const VW_SETTINGS_ID = 'vw-settings-shadow-host'
 
-  if (!window.VW_GLOBAL_SETTINGS) {
-    window.VW_GLOBAL_SETTINGS = {
-      lootlinkLocal: true,
-      redirectWaitTime: 5,
-      luarmorWaitTime: 20,
-      autoRedirect: true
-    }
-    
-    try {
-      const saved = localStorage.getItem('vw_global_settings')
-      if (saved) {
-        const parsed = JSON.parse(saved)
-        Object.assign(window.VW_GLOBAL_SETTINGS, parsed)
-      }
-    } catch (_) {}
-  }
-
   const SETTINGS_CSS = `
 *{margin:0;padding:0;box-sizing:border-box;}
 :host{all:initial;position:fixed !important;bottom:14px !important;left:14px !important;z-index:2147483647 !important;pointer-events:none !important;}
@@ -58,13 +41,39 @@
 @keyframes vw-toast-in{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
 `
 
-  function saveGlobalSettings() {
-    try {
-      localStorage.setItem('vw_global_settings', JSON.stringify(window.VW_GLOBAL_SETTINGS))
-      window.dispatchEvent(new CustomEvent('vw-settings-updated', {
-        detail: window.VW_GLOBAL_SETTINGS
-      }))
-    } catch (_) {}
+  const keys = {
+    lootlinkLocal: 'vw_lootlink_local',
+    redirectWaitTime: 'vw_redirect_wait_time',
+    luarmorWaitTime: 'vw_luarmor_wait_time'
+  }
+
+  function hasGM() {
+    return typeof GM_getValue === 'function' && typeof GM_setValue === 'function'
+  }
+
+  function getStoredValue(key, defaultValue) {
+    if (hasGM()) {
+      try {
+        return GM_getValue(key, defaultValue)
+      } catch (_) {}
+    }
+    const lsValue = localStorage.getItem(key)
+    if (lsValue === null) return defaultValue
+    if (typeof defaultValue === 'boolean') return lsValue === 'true'
+    if (typeof defaultValue === 'number') {
+      const n = parseInt(lsValue, 10)
+      return Number.isFinite(n) ? n : defaultValue
+    }
+    return lsValue
+  }
+
+  function setStoredValue(key, value) {
+    if (hasGM()) {
+      try {
+        GM_setValue(key, value)
+      } catch (_) {}
+    }
+    localStorage.setItem(key, String(value))
   }
 
   function clampInt(value, min, max, def) {
@@ -146,9 +155,9 @@
     const reloadBtn = shadow.querySelector('#vwReloadBtn')
 
     function openPanel() {
-      lootlinkToggle.checked = !!window.VW_GLOBAL_SETTINGS.lootlinkLocal
-      waitTimeInput.value = String(clampInt(window.VW_GLOBAL_SETTINGS.redirectWaitTime, 0, 60, 5))
-      luarmorWaitTimeInput.value = String(clampInt(window.VW_GLOBAL_SETTINGS.luarmorWaitTime, 0, 120, 20))
+      lootlinkToggle.checked = !!getStoredValue(keys.lootlinkLocal, true)
+      waitTimeInput.value = String(clampInt(getStoredValue(keys.redirectWaitTime, 5), 0, 60, 5))
+      luarmorWaitTimeInput.value = String(clampInt(getStoredValue(keys.luarmorWaitTime, 20), 0, 120, 20))
       backdrop.classList.add('open')
     }
 
@@ -182,13 +191,17 @@
       const newWaitTime = clampInt(waitTimeInput.value, 0, 60, 5)
       const newLuarmorWaitTime = clampInt(luarmorWaitTimeInput.value, 0, 120, 20)
 
-      window.VW_GLOBAL_SETTINGS.lootlinkLocal = newLootlink
-      window.VW_GLOBAL_SETTINGS.redirectWaitTime = newWaitTime
-      window.VW_GLOBAL_SETTINGS.luarmorWaitTime = newLuarmorWaitTime
-      
-      saveGlobalSettings()
+      setStoredValue(keys.lootlinkLocal, newLootlink)
+      setStoredValue(keys.redirectWaitTime, newWaitTime)
+      setStoredValue(keys.luarmorWaitTime, newLuarmorWaitTime)
 
-      showToast(shadow, '✓ Settings saved globally!')
+      if (window.VW_CONFIG) {
+        window.VW_CONFIG.lootlinkLocal = newLootlink
+        window.VW_CONFIG.redirectWaitTime = newWaitTime
+        window.VW_CONFIG.luarmorWaitTime = newLuarmorWaitTime
+      }
+
+      showToast(shadow, hasGM() ? '✓ Settings saved globally!' : '✓ Settings saved (localStorage)!')
       closePanel()
     })
 
@@ -215,26 +228,15 @@
 
   function init() {
     createSettingsUI()
-    
-    window.addEventListener('vw-settings-updated', (e) => {
-      if (e.detail) {
-        Object.assign(window.VW_GLOBAL_SETTINGS, e.detail)
-      }
-    })
-    
     const observer = new MutationObserver(() => {
       if (!document.getElementById(VW_SETTINGS_ID)) createSettingsUI()
     })
     observer.observe(document.documentElement, { childList: true, subtree: true })
-    
     setInterval(() => {
       if (!document.getElementById(VW_SETTINGS_ID)) createSettingsUI()
     }, 2000)
   }
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init)
-  } else {
-    init()
-  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init)
+  else init()
 })()
