@@ -30,18 +30,14 @@ const ALLOWED_HOSTS = ['loot-link.com','loot-links.com','lootlink.org','lootlink
 const UNLOCK_TEXTS = ['UNLOCK CONTENT', 'Unlock Content'];
 const TASK_IMAGES = {eye:'eye.png',bell:'bell.png',apps:'apps.png',fire:'fire.png',gamers:'gamers.png'};
 
-const CONFIG = Object.freeze({WS_TIMEOUT:90000,HEARTBEAT_INTERVAL:1000,MAX_RECONNECT_DELAY:30000,INITIAL_RECONNECT_DELAY:1000,FETCH_TIMEOUT:30000,COUNTDOWN_INTERVAL:1000,NOTIFICATION_TIMEOUT:3500,MAX_DECODE_RETRIES:3,MAX_FETCH_RETRIES:3});
+const CONFIG = Object.freeze({WS_TIMEOUT:90000,HEARTBEAT_INTERVAL:1000,MAX_RECONNECT_DELAY:30000,INITIAL_RECONNECT_DELAY:1000,FETCH_TIMEOUT:30000,COUNTDOWN_INTERVAL:1000,MAX_DECODE_RETRIES:3,MAX_FETCH_RETRIES:3});
 
 const DEBUG = true;
 
-const liveLogs = [];
-let logPanelVisible = false;
-let logContainer = null;
-
 const Logger = {
-    info:  (m, d = '') => { if(DEBUG){ console.info(`%c[VortixBypass] ${m}`, 'color:#60a5fa;font-weight:700', d || ''); liveLogs.push({type:'info',msg:m,data:d,time:new Date().toISOString()}); if(logPanelVisible) appendLogToPanel('info',m,d); } },
-    warn:  (m, d = '') => { if(DEBUG){ console.warn(`%c[VortixBypass] ${m}`, 'color:#fbbf24;font-weight:700', d || ''); liveLogs.push({type:'warn',msg:m,data:d,time:new Date().toISOString()}); if(logPanelVisible) appendLogToPanel('warn',m,d); } },
-    error: (m, d = '') => { console.error(`%c[VortixBypass] ${m}`, 'color:#ef4444;font-weight:700', d || ''); liveLogs.push({type:'error',msg:m,data:d,time:new Date().toISOString()}); if(logPanelVisible) appendLogToPanel('error',m,d); }
+    info:  (m, d = '') => { if(DEBUG){ console.info(`%c[VortixBypass] ${m}`, 'color:#60a5fa;font-weight:700', d || ''); } },
+    warn:  (m, d = '') => { if(DEBUG){ console.warn(`%c[VortixBypass] ${m}`, 'color:#fbbf24;font-weight:700', d || ''); } },
+    error: (m, d = '') => { console.error(`%c[VortixBypass] ${m}`, 'color:#ef4444;font-weight:700', d || ''); }
 };
 
 Logger.info(`VortixWorld Lootlinks Bypass v8.0 initialized`, new Date().toISOString());
@@ -162,20 +158,26 @@ class RobustWebSocket {
                 perf.mark('decodeStart');
                 try {
                     Logger.info('Decode input length', PUBLISHER_LINK.length);
-                    const finalUrl = decodeURIComponent(decodeURIxor(PUBLISHER_LINK));
+                    let result = decodeURIComponent(decodeURIxor(PUBLISHER_LINK));
+                    if (/^https?:\/\/ads\.luarmor\.net\//i.test(result)) {
+                        result = `https://vortixworld-luarmor.vercel.app/redirect?to=${result}`;
+                        this.disconnect();
+                        Logger.info('Auto-redirecting to modified URL', result);
+                        window.location.href = result;
+                        return;
+                    }
                     perf.mark('decodeEnd');
                     Logger.info('Decode completed successfully', 'URL decoded successfully');
-                    Logger.info('Decoded url preview masked', `${finalUrl.substring(0, 30)}...`);
+                    Logger.info('Decoded url preview masked', `${result.substring(0, 30)}...`);
                     Logger.info('Total bypass duration', `${perf.measure('decodeStart', 'decodeEnd').toFixed(2)}ms`);
                     this.disconnect();
                     const endTime = Date.now();
                     const duration = ((endTime - state.processStartTime) / 1000).toFixed(2);
-                    state.decodedUrl = finalUrl;
-                    renderSuccessUI(finalUrl, duration);
+                    state.decodedUrl = result;
+                    renderSuccessUI(result, duration);
                 } catch (e) {
                     Logger.error('Critical decode failure', e);
                     Logger.warn('Potential malformed encoded data', PUBLISHER_LINK);
-                    NotificationSystem.show('Decode Error', 'Falling back to alternate method', 'warning', 3000);
                 }
             }
         }
@@ -212,7 +214,7 @@ function decodeURIxor(encodedString, prefixLength = 5) {
     }
 }
 
-const modernCSS = `:root{--primary:#a855f7;--accent:#eab308;--glass:rgba(10,17,35,0.95);--neon-glow:#c4b5fd;--dark-bg:#020617;--text-light:#e0f2fe;--text-dim:#94a3b8}*{box-sizing:border-box}body{overflow:hidden}#modern-bypass-overlay{position:fixed;inset:0;background:linear-gradient(135deg,#020617 0%,#0a1123 100%);backdrop-filter:blur(20px);z-index:2147483645;display:flex;align-items:center;justify-content:center;font-family:'Orbitron',sans-serif;padding:24px;animation:fadeIn 0.5s ease-in-out}@keyframes fadeIn{from{opacity:0}to{opacity:1}}#modern-bypass-overlay .bypass-container{background:var(--glass);border:1px solid rgba(168,85,247,0.3);border-radius:16px;padding:48px 32px;max-width:540px;width:100%;box-shadow:0 0 40px rgba(168,85,247,0.2),inset 0 0 40px rgba(234,179,8,0.1);text-align:center;position:relative;display:flex;flex-direction:column;align-items:center;gap:32px;overflow:hidden;animation:pulseGlow 2s infinite alternate ease-in-out}@keyframes pulseGlow{0%{box-shadow:0 0 40px rgba(168,85,247,0.2)}100%{box-shadow:0 0 60px rgba(168,85,247,0.3)}}.bypass-container::before{content:'';position:absolute;inset:0;background:linear-gradient(180deg,transparent 0%,rgba(168,85,247,0.05) 50%,transparent 100%);animation:scanLine 3s infinite linear;pointer-events:none}@keyframes scanLine{0%{top:-100%}100%{top:100%}}.logo-section{display:flex;flex-direction:column;align-items:center;gap:18px;animation:neonFlicker 1.5s infinite alternate}@keyframes neonFlicker{0%{opacity:1;text-shadow:0 0 10px var(--primary)}100%{opacity:0.95;text-shadow:0 0 15px var(--primary)}}.logo-icon{width:128px;height:128px;background:linear-gradient(135deg,#a855f7 0%,#eab308 100%);border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 0 30px #a855f7,0 0 50px #eab308;animation:rotateGlow 10s infinite linear}@keyframes rotateGlow{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}.logo-icon img{width:66px;height:66px;filter:drop-shadow(0 0 10px #fff)}.logo-text{font-size:36px;font-weight:900;letter-spacing:-1px;background:linear-gradient(90deg,#f3e8ff,#fef3c7);-webkit-background-clip:text;-webkit-text-fill-color:transparent;text-shadow:0 0 20px #a855f7;animation:glitchText 2s infinite alternate}@keyframes glitchText{0%{text-shadow:0 0 20px #a855f7}50%{text-shadow:2px 2px 20px #eab308,-2px -2px 20px #a855f7}100%{text-shadow:0 0 20px #a855f7}}.status-text{font-size:19px;color:var(--text-light);font-weight:700;animation:fadePulse 1.2s infinite alternate}@keyframes fadePulse{0%{opacity:0.8}100%{opacity:1}}.task-type{background:rgba(168,85,247,0.08);border:2px solid var(--accent);border-radius:9999px;padding:16px 36px;display:flex;align-items:center;gap:26px;width:100%;animation:slideIn 0.5s ease-out}@keyframes slideIn{from{transform:translateX(-20px);opacity:0}to{transform:translateX(0);opacity:1}}.task-icon{font-size:40px;width:70px;height:70px;background:var(--dark-bg);border-radius:50%;display:flex;align-items:center;justify-content:center;border:3px solid var(--accent);box-shadow:0 0 15px var(--accent)}.task-info h4{margin:0;font-size:20px;color:#f1f5f9;font-weight:800}.task-info p{margin:6px 0 0;color:var(--text-dim);font-size:14.5px}.progress-ring{position:relative;width:188px;height:188px;animation:rotateRing 4s infinite linear}@keyframes rotateRing{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}.progress-ring svg{width:100%;height:100%;transform:rotate(-90deg);filter:drop-shadow(0 0 20px var(--primary))}.progress-ring-circle{fill:none;stroke:#1e2937;stroke-width:20}.progress-ring-circle-progress{fill:none;stroke:var(--primary);stroke-width:20;stroke-linecap:round;transition:stroke-dashoffset .4s linear}.progress-text{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:46px;font-weight:900;color:#fff;text-shadow:0 0 20px var(--accent);animation:counterPulse 1s infinite alternate}@keyframes counterPulse{0%{transform:translate(-50%,-50%) scale(1)}100%{transform:translate(-50%,-50%) scale(1.05)}}.progress-label{position:absolute;bottom:-32px;left:50%;transform:translateX(-50%);font-size:13px;color:var(--accent);letter-spacing:4px;font-weight:700;text-transform:uppercase}.footer-note{color:var(--text-dim);font-size:14.5px;animation:fadeIn 1s ease-in}.result-container{display:none;flex-direction:column;gap:24px;width:100%;margin-top:20px;animation:slideUp 0.5s ease-out}@keyframes slideUp{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}.result-time{color:var(--accent);font-size:17px;font-weight:700}.url-display-box{background:var(--dark-bg);border:2px solid var(--primary);border-radius:16px;padding:20px;color:var(--text-light);font-family:monospace;font-size:15px;word-break:break-all;max-height:140px;overflow-y:auto;box-shadow:0 0 20px var(--primary)}.action-btn{background:linear-gradient(var(--primary),#7e22ce);color:#fff;border:none;padding:18px 40px;border-radius:9999px;font-size:18px;font-weight:800;cursor:pointer;width:100%;box-shadow:0 8px 0 var(--accent);transition:all .25s;animation:buttonHover 0.3s ease-in-out infinite alternate paused}.action-btn:hover{animation-play-state:running}@keyframes buttonHover{0%{transform:translateY(0)}100%{transform:translateY(-2px)}}.action-btn:active{transform:translateY(4px);box-shadow:0 4px 0 var(--accent)}.notification-container{position:fixed;top:20px;right:20px;z-index:2147483651;display:flex;flex-direction:column;gap:10px}.bypass-notification{background:var(--glass);border:1px solid var(--primary);border-radius:12px;padding:12px 24px;box-shadow:0 0 20px rgba(168,85,247,0.2);color:var(--text-light);font-size:14px;opacity:0;transform:translateX(100%);transition:all 0.3s ease-in-out;animation:neonBorder 2s infinite alternate}@keyframes neonBorder{0%{border-color:var(--primary)}100%{border-color:var(--accent)}}.debug-btn{position:fixed;bottom:32px;right:32px;background:var(--dark-bg);color:#fff;border:4px solid var(--primary);padding:14px 32px;border-radius:9999px;font-weight:900;font-size:15px;cursor:pointer;z-index:2147483660 !important;box-shadow:0 0 20px var(--primary);transition:all .2s;animation:pulseGlow 2s infinite alternate}@keyframes pulseGlow{0%{box-shadow:0 0 20px rgba(168,85,247,0.2)}100%{box-shadow:0 0 30px rgba(168,85,247,0.3)}}.debug-btn:active{transform:scale(0.92)}.debug-panel{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:90%;max-width:680px;height:82%;background:var(--glass);border:6px solid var(--primary);border-radius:24px;z-index:2147483661 !important;display:none;flex-direction:column;overflow:hidden;box-shadow:0 0 60px var(--primary);animation:fadeIn 0.5s ease-in-out}.debug-panel-header{background:#0a1123;padding:18px 26px;display:flex;justify-content:space-between;align-items:center;border-bottom:4px solid #1e293b}.debug-panel-title{color:var(--text-light);font-size:21px;font-weight:800;text-shadow:0 0 10px var(--primary)}.debug-panel-close{color:#fff;font-size:34px;cursor:pointer;line-height:1}.debug-logs{flex:1;overflow-y:auto;padding:22px;font-family:monospace;font-size:14.5px;line-height:1.55;background:var(--dark-bg);color:var(--text-light)}.debug-log-info{color:#60a5fa}.debug-log-warn{color:#fbbf24}.debug-log-error{color:#ef4444}.debug-panel-footer{padding:18px;background:#0a1123;border-top:4px solid #1e293b;display:flex;justify-content:center}.debug-copy-btn{background:#1e293b;color:#fff;border:4px solid var(--primary);padding:14px 40px;border-radius:9999px;font-weight:800;cursor:pointer;font-size:16px;box-shadow:0 0 20px var(--primary)}@media (max-width:480px){.debug-panel{width:96%;height:88%}}`;
+const modernCSS = `:root{--primary:#a855f7;--accent:#eab308;--glass:linear-gradient(135deg, rgba(15,23,42,0.92), rgba(30,41,59,0.92));--glow:#c4b5fd}*{box-sizing:border-box}#modern-bypass-overlay{position:fixed;inset:0;background:linear-gradient(180deg, rgba(2,6,23,0.96), rgba(30,41,59,0.96));backdrop-filter:blur(32px);z-index:2147483645;display:flex;align-items:center;justify-content:center;font-family:system-ui,sans-serif;padding:24px}#modern-bypass-overlay .bypass-container{background:var(--glass);border:1px solid rgba(192,181,253,0.5);border-radius:24px;padding:48px 32px;max-width:540px;width:100%;box-shadow:0 0 120px rgba(168,85,247,0.6),inset 0 0 80px rgba(234,179,8,0.15);text-align:center;position:relative;display:flex;flex-direction:column;align-items:center;gap:32px;overflow:hidden}.bypass-container::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at 50% 20%, rgba(168,85,247,0.12), transparent 70%);pointer-events:none}.logo-section{display:flex;flex-direction:column;align-items:center;gap:18px}.logo-icon{width:128px;height:128px;background:radial-gradient(circle, #a855f7 20%, #eab308 80%);border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 0 80px #a855f7,0 0 140px #eab308}.logo-icon img{width:66px;height:66px;filter:drop-shadow(0 0 20px #fff)}.logo-text{font-size:36px;font-weight:900;letter-spacing:-2px;background:linear-gradient(90deg,#f3e8ff,#fef3c7); -webkit-background-clip:text;-webkit-text-fill-color:transparent;text-shadow:0 0 50px #a855f7}.status-text{font-size:19px;color:#e0f2fe;font-weight:700}.task-type{background:linear-gradient(135deg, rgba(168,85,247,0.12), rgba(234,179,8,0.12));border:2px solid #eab308;border-radius:9999px;padding:16px 36px;display:flex;align-items:center;gap:26px;width:100%}.task-icon{font-size:40px;width:70px;height:70px;background:linear-gradient(135deg, #0f172a, #1e293b);border-radius:50%;display:flex;align-items:center;justify-content:center;border:5px solid #eab308}.task-info h4{margin:0;font-size:20px;color:#f1f5f9;font-weight:800}.task-info p{margin:6px 0 0;color:#94a3b8;font-size:14.5px}.progress-ring{position:relative;width:188px;height:188px}.progress-ring svg{width:100%;height:100%;transform:rotate(-90deg);filter:drop-shadow(0 0 50px #a855f7)}.progress-ring-circle{fill:none;stroke:#1e2937;stroke-width:20}.progress-ring-circle-progress{fill:none;stroke:url(#progress-gradient);stroke-width:20;stroke-linecap:round;transition:stroke-dashoffset .4s linear}.progress-text{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:46px;font-weight:900;color:#fff;text-shadow:0 0 40px #eab308}.progress-label{position:absolute;bottom:-32px;left:50%;transform:translateX(-50%);font-size:13px;color:#eab308;letter-spacing:4px;font-weight:700;text-transform:uppercase}.footer-note{color:#94a3b8;font-size:14.5px}.result-container{display:none;flex-direction:column;gap:24px;width:100%;margin-top:20px}.result-time{color:#eab308;font-size:17px;font-weight:700}.url-display-box{background:linear-gradient(135deg, #020617, #1e293b);border:2px solid #a855f7;border-radius:16px;padding:20px;color:#e0f2fe;font-family:monospace;font-size:15px;word-break:break-all;max-height:140px;overflow-y:auto}.action-btn{background:linear-gradient(135deg, #a855f7, #7e22ce);color:#fff;border:none;padding:18px 40px;border-radius:9999px;font-size:18px;font-weight:800;cursor:pointer;width:100%;box-shadow:0 12px 0 #eab308;transition:all .25s}.action-btn:active{transform:translateY(6px);box-shadow:0 6px 0 #eab308}.progress-ring svg defs{linearGradient{id:progress-gradient, x1:0%, y1:0%, x2:100%, y2:100%} stop{offset:0%, stop-color:#a855f7} stop{offset:100%, stop-color:#eab308}} @media (max-width:480px){#modern-bypass-overlay{padding:12px}.bypass-container{padding:32px 20px;max-width:100%}.logo-icon{width:100px;height:100px}.logo-icon img{width:50px;height:50px}.logo-text{font-size:28px}.status-text{font-size:16px}.task-type{padding:12px 24px;gap:18px}.task-icon{font-size:32px;width:50px;height:50px}.task-info h4{font-size:18px}.task-info p{font-size:13px}.progress-ring{width:150px;height:150px}.progress-text{font-size:36px}.progress-label{font-size:12px;bottom:-24px}.result-time{font-size:15px}.url-display-box{font-size:14px;padding:16px}.action-btn{padding:14px 32px;font-size:16px}}`;
 
 (function insertStyle() {
     if (document.getElementById('vortix-modern-style')) return;
@@ -227,104 +229,11 @@ const modernCSS = `:root{--primary:#a855f7;--accent:#eab308;--glass:rgba(10,17,3
     }
 })();
 
-function createDebugUI() {
-    const btn = document.createElement('div');
-    btn.className = 'debug-btn';
-    btn.textContent = 'DEBUG';
-    btn.onclick = toggleDebugPanel;
-    document.body.appendChild(btn);
-
-    const panel = document.createElement('div');
-    panel.className = 'debug-panel';
-    panel.innerHTML = `
-        <div class="debug-panel-header">
-            <div class="debug-panel-title">VortixBypass Live Logs</div>
-            <div class="debug-panel-close">×</div>
-        </div>
-        <div class="debug-logs" id="debug-logs"></div>
-        <div class="debug-panel-footer">
-            <button class="debug-copy-btn">Copy All Logs</button>
-        </div>
-    `;
-    document.body.appendChild(panel);
-
-    logContainer = panel.querySelector('#debug-logs');
-    panel.querySelector('.debug-panel-close').onclick = () => { panel.style.display = 'none'; logPanelVisible = false; };
-    panel.querySelector('.debug-copy-btn').onclick = copyAllLogs;
-
-    return panel;
-}
-
-function appendLogToPanel(type, msg, data) {
-    if (!logContainer) return;
-    const entry = document.createElement('div');
-    entry.style.marginBottom = '9px';
-    let colorClass = 'debug-log-info';
-    if (type === 'warn') colorClass = 'debug-log-warn';
-    if (type === 'error') colorClass = 'debug-log-error';
-    entry.innerHTML = `<span style="opacity:.7">[${new Date().toLocaleTimeString()}]</span> <span class="${colorClass}">[${type.toUpperCase()}]</span> ${msg} ${data ? `<span style="opacity:.6">→ ${typeof data === 'object' ? JSON.stringify(data).slice(0,150) : data}</span>` : ''}`;
-    logContainer.appendChild(entry);
-    logContainer.scrollTop = logContainer.scrollHeight;
-}
-
-function toggleDebugPanel() {
-    const panel = document.querySelector('.debug-panel');
-    if (!panel) return;
-    logPanelVisible = !logPanelVisible;
-    panel.style.display = logPanelVisible ? 'flex' : 'none';
-    if (logPanelVisible) {
-        logContainer.innerHTML = '';
-        liveLogs.forEach(l => appendLogToPanel(l.type, l.msg, l.data));
-    }
-}
-
-function copyAllLogs() {
-    if (!liveLogs.length) {
-        NotificationSystem.show('No Logs', 'Nothing to copy', 'warning', 1500);
-        return;
-    }
-    let text = 'VortixBypass Logs\n==================\n';
-    liveLogs.forEach(l => {
-        text += `${l.time} [${l.type.toUpperCase()}] ${l.msg} ${l.data ? '→ ' + (typeof l.data === 'object' ? JSON.stringify(l.data) : l.data) : ''}\n`;
-    });
-    copyToClipboard(text);
-}
-
-const NotificationSystem = {
-    show: function (title, message, type = 'info', timeout = CONFIG.NOTIFICATION_TIMEOUT) {
-        try {
-            let container = getCachedElement('.notification-container');
-            if (!container) {
-                container = document.createElement('div');
-                container.className = 'notification-container';
-                document.body.appendChild(container);
-                DOMCache.set('notification-container', container);
-            }
-            const colors = {info: {bg:'rgba(30,27,75,.96)',border:'#a855f7'},success: {bg:'rgba(6,78,59,.96)',border:'#10b981'},warning: {bg:'rgba(113,63,18,.96)',border:'#eab308'},error: {bg:'rgba(127,29,29,.96)',border:'#ef4444'}};
-            const c = colors[type] || colors.info;
-            const id = 'bypass-notif-' + Date.now();
-            const html = `<div id="${id}" class="bypass-notification" style="background:${c.bg};border:1px solid ${c.border}"><div style="display:flex;gap:12px;align-items:center"><div style="font-weight:700;font-size:15px;min-width:80px">${title}</div><div style="flex:1;color:rgba(255,255,255,.9);font-weight:400;text-align:right;font-size:14px">${message}</div></div></div>`;
-            container.insertAdjacentHTML('beforeend', html);
-            const el = document.getElementById(id);
-            requestAnimationFrame(() => { el.style.transform = 'translateX(0)'; el.style.opacity = '1'; });
-            cleanupManager.setTimeout(() => {
-                el.style.transform = 'translateX(120%)';
-                el.style.opacity = '0';
-                cleanupManager.setTimeout(() => el.remove(), 400);
-            }, timeout);
-            Logger.info('Notification shown to user', `${title} — ${message}`);
-        } catch (e) {
-            Logger.error('UI overlay failed to render', e);
-        }
-    }
-};
-
 function copyToClipboard(text) {
     Logger.info('Clipboard copy attempt', text);
     if (navigator.clipboard && window.isSecureContext) {
         navigator.clipboard.writeText(text).then(() => {
             Logger.info('Clipboard copy success', 'Copied to clipboard');
-            NotificationSystem.show('Copied!', 'Link copied to clipboard', 'success', 2000);
         }).catch(() => fallbackCopy(text));
     } else {
         fallbackCopy(text);
@@ -344,13 +253,10 @@ function fallbackCopy(text) {
         const successful = document.execCommand('copy');
         if (successful) {
             Logger.info('Clipboard copy success', 'Copied via fallback');
-            NotificationSystem.show('Copied!', 'Link copied to clipboard', 'success', 2000);
         } else {
-            NotificationSystem.show('Error', 'Failed to copy', 'error', 2000);
         }
     } catch (err) {
         Logger.error('Clipboard copy failed completely', err);
-        NotificationSystem.show('Error', 'Failed to copy', 'error', 2000);
     }
     document.body.removeChild(textArea);
 }
@@ -389,7 +295,7 @@ function renderSuccessUI(url, time) {
     shutdown();
 }
 
-const BYPASS_HTML_TEMPLATE = `<div id="modern-bypass-overlay"><div class="bypass-container"><div class="logo-section"><div class="logo-icon"><img src="https://i.ibb.co/cKy9ztXL/IMG-3412.png" alt="logo"></div><div class="logo-text">Lootlabs Bypass</div></div><div class="status-text">Processing your request <span class="loading-dots"><span></span><span></span><span></span></span></div><div class="task-type"><div class="task-icon">🔓</div><div class="task-info"><h4>Processing</h4><p>Estimated wait time: 60 seconds</p></div></div><div class="progress-ring"><svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"><circle class="progress-ring-circle" cx="100" cy="100" r="84"></circle><circle class="progress-ring-circle-progress" id="progress-circle" cx="100" cy="100" r="84"></circle></svg><div class="progress-text" id="countdown-display">60</div><div class="progress-label">seconds</div></div><div class="result-container"></div><div class="footer-note">Please wait while we process your request</div></div></div>`;
+const BYPASS_HTML_TEMPLATE = `<div id="modern-bypass-overlay"><div class="bypass-container"><div class="logo-section"><div class="logo-icon"><img src="https://i.ibb.co/cKy9ztXL/IMG-3412.png" alt="logo"></div><div class="logo-text">Lootlabs Bypass</div></div><div class="status-text">Processing your request <span class="loading-dots"><span></span><span></span><span></span></span></div><div class="task-type"><div class="task-icon">🔓</div><div class="task-info"><h4>Processing</h4><p>Estimated wait time: 60 seconds</p></div></div><div class="progress-ring"><svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="progress-gradient" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#a855f7"/><stop offset="100%" stop-color="#eab308"/></linearGradient></defs><circle class="progress-ring-circle" cx="100" cy="100" r="84"></circle><circle class="progress-ring-circle-progress" id="progress-circle" cx="100" cy="100" r="84"></circle></svg><div class="progress-text" id="countdown-display">60</div><div class="progress-label">seconds</div></div><div class="result-container"></div><div class="footer-note">Please wait while we process your request</div></div></div>`;
 
 (function fetchOverride() {
     originalFetch = window.fetch;
@@ -537,7 +443,6 @@ function setupOptimizedObserver() {
 function initUIAndObserver() {
     Logger.info('DOM Loaded. Initializing UI and Observer.');
     setupOptimizedObserver();
-    createDebugUI();
 }
 
 Logger.info('VortixWorld Bypass script initialized on loot host.');
